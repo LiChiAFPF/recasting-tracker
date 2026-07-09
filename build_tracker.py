@@ -542,7 +542,7 @@ def render_html(records, meta, assets):
     # select options
     agency_opts = "\n".join(f'        <option>{esc(a)}</option>' for a in meta['agencies'])
     area_opts = "\n".join(f'        <option>{esc(a)}</option>' for a in meta['policy_areas'])
-    eo_opts = "\n".join(f'        <option value="{e}">EO {e} — {esc(eo_info.get(e,{}).get("name",""))} ({eo_counts[e]:,})</option>' for e in meta['eos_sorted'])
+    eo_opts = "\n".join(f'        <option value="{e}">EO {e}: {esc(eo_info.get(e,{}).get("name",""))} ({eo_counts[e]:,})</option>' for e in meta['eos_sorted'])
 
     top_area = meta['area_high'][0]
     html = f'''<!DOCTYPE html>
@@ -550,7 +550,7 @@ def render_html(records, meta, assets):
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recasting Regulations — Tracking Deregulation After Loper Bright | AFP Foundation</title>
+    <title>Recasting Regulations: Tracking Deregulation After Loper Bright | AFP Foundation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -866,9 +866,9 @@ def render_html(records, meta, assets):
 
     <section class="hero" id="overview">
       <div class="hero-inner">
-        <span class="eyebrow">The End of Chevron Deference · A Report on the Post-<em style="font-style:italic">Loper Bright</em> Era</span>
-        <h1>Recasting regulations after <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></h1>
-        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference — courts, not agencies, now say what the law means. This report tracks how that shift is reshaping the federal rulebook: every proposed rule, final rule, and rescission in the deregulatory wave that followed, scored for impact and mapped to the executive orders carrying it out. Sourced continuously from the Federal Register.</p>
+        <span class="eyebrow">The End of Chevron Deference · A Recasting Regulations Report</span>
+        <h1>Recasting Regulations After <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></h1>
+        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result: every rule agencies have proposed, finalized, or rescinded in the deregulatory wave that followed, each one scored for impact and tied to the executive orders behind it. The data is drawn continuously from the Federal Register.</p>
         <div class="hero-meta">
           <span class="live-dot" id="asof">Data current as of <strong>{meta['today']}</strong></span>
           <span>·</span><span><strong>{meta['total']:,}</strong> regulatory actions</span>
@@ -900,12 +900,12 @@ def render_html(records, meta, assets):
           <div class="loper-top">
             <div class="loper-lead">
               <div>
-                <p>On <b>June 28, 2024</b>, in <em>Loper Bright Enterprises v. Raimondo</em>, the Supreme Court overruled <em>Chevron U.S.A. v. NRDC</em> — the 1984 precedent that for four decades had told courts to defer to an agency's reasonable interpretation of any ambiguous statute. In a 6–3 decision, Chief Justice Roberts held that the Administrative Procedure Act requires courts to exercise their own independent judgment, and that they may not defer to an agency's reading of the law simply because a statute is ambiguous.</p>
-                <p>The practical consequence is direct: a regulation once shielded by <em>Chevron</em> deference is now open to challenge on the statute's <em>single best reading</em>. Agencies are responding by revisiting, revising, and rescinding rules built on the old regime — and the executive branch has moved to accelerate that review through a series of deregulatory orders. This report follows the regulatory actions that have resulted.</p>
+                <p>On <b>June 28, 2024</b>, in <em>Loper Bright Enterprises v. Raimondo</em>, the Supreme Court overruled <em>Chevron U.S.A. v. NRDC</em>. For four decades that 1984 precedent told courts to defer to an agency's reasonable interpretation whenever a statute was ambiguous. In a 6–3 decision, Chief Justice Roberts held that the Administrative Procedure Act requires courts to exercise their own independent judgment. Ambiguity alone no longer buys an agency deference.</p>
+                <p>The consequence is direct. A regulation once shielded by <em>Chevron</em> is now open to challenge on the statute's <em>single best reading</em>. Agencies have started revisiting and rescinding rules built on the old regime rather than wait for a court to do it for them, and the executive branch has pushed that review forward through a series of deregulatory orders. The regulatory actions on this page are what that has produced so far.</p>
               </div>
               <div class="loper-quote">
                 <blockquote>"Courts must exercise their independent judgment in deciding whether an agency has acted within its statutory authority."</blockquote>
-                <cite>— Chief Justice John Roberts, majority opinion, <em>Loper Bright v. Raimondo</em> (2024)</cite>
+                <cite>Chief Justice John Roberts, majority opinion, <em>Loper Bright v. Raimondo</em> (2024)</cite>
               </div>
             </div>
           </div>
@@ -918,7 +918,7 @@ def render_html(records, meta, assets):
             <div class="doctrine-col">
               <span class="doctrine-tag tag-after">2024 – Present · After Loper Bright</span>
               <h4>Courts say what the law is</h4>
-              <p>Judges now independently determine a statute's best meaning, giving agency views weight only to the extent they persuade. Rules that stretched ambiguous language are newly vulnerable — and agencies are recasting them before courts do.</p>
+              <p>Judges now decide a statute's best meaning for themselves, giving the agency's view only as much weight as it earns. Rules that leaned on stretched readings of ambiguous language are the most exposed, and agencies are recasting them before a court forces the issue.</p>
             </div>
           </div>
           <div class="era">
@@ -940,15 +940,15 @@ def render_html(records, meta, assets):
       <section class="section" id="findings">
         <div class="section-head">
           <div class="section-kicker">Key Findings</div>
-          <h2 class="section-title">Where the post-<em style="font-style:italic">Loper</em> rollback is landing</h2>
-          <p class="section-desc">Each action is scored on two dimensions: <b>Impact Potential</b> (how substantial the regulatory change is) and <b>Impact of Deregulatory Action</b> (how directly the deregulatory executive orders drove the decision). The findings below rank the policy areas seeing the most substantive change as agencies recast rules for the post-<em>Chevron</em> era.</p>
+          <h2 class="section-title">Where the rollback is landing</h2>
+          <p class="section-desc">Each action is scored on two dimensions. <b>Impact Potential</b> measures how substantial the regulatory change is. <b>Impact of Deregulatory Action</b> measures how directly the deregulatory executive orders drove it. The findings below rank the policy areas seeing the most substantive change as agencies rewrite rules for the world after <em>Chevron</em>.</p>
         </div>
 
         <div class="finding">
           <div class="finding-big">{top_area[1]}<small>HIGH-IMPACT ACTIONS IN {top_area[0].upper()}</small></div>
           <div class="finding-text">
             <h3>{top_area[0]} leads the deregulatory agenda</h3>
-            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} carry high impact potential — the largest concentration of substantive regulatory change in any single policy domain. Energy, Environment, and Criminal Law follow as the next most active fronts.</p>
+            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} carry high impact potential. That is the heaviest concentration of substantive change in any single policy area, and it is where the deregulatory agenda has moved fastest.</p>
           </div>
         </div>
 
@@ -978,7 +978,7 @@ def render_html(records, meta, assets):
             <div class="lc-big">{meta['loper_total']}<small>ACTIONS CITE LOPER BRIGHT</small></div>
             <div class="lc-head-text">
               <h3>The doctrine is doing work on the page</h3>
-              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning — and {meta['loper_high']} of those carry high impact potential. The Environmental Protection Agency leads, using the decision to revisit air, water, and permitting rules built on decades of deference.</p>
+              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning, and {meta['loper_high']} of those carry high impact potential. The Environmental Protection Agency leads. It is using the decision to reopen air, water, and permitting rules that stood for decades on deference alone.</p>
             </div>
           </div>
           <div class="lc-body">
@@ -990,7 +990,7 @@ def render_html(records, meta, assets):
     {loper_agency_bars}        </div>
           </div>
           <div class="lc-cta">
-            <span>See every rule that cites the decision — filtered live in the tracker below.</span>
+            <span>See every rule that cites the decision, filtered live in the tracker below.</span>
             <button class="lc-btn" onclick="showLoperCited()">View all {meta['loper_total']} citing rules →</button>
           </div>
         </div>
@@ -1003,14 +1003,14 @@ def render_html(records, meta, assets):
         <div class="section-head">
           <div class="section-kicker">Analysis</div>
           <h2 class="section-title">The mechanics of the rollback</h2>
-          <p class="section-desc">If <em>Loper Bright</em> supplied the legal opening, executive orders supplied the marching orders. The patterns below show which directives, agencies, and moments are driving the recast of the federal rulebook.</p>
+          <p class="section-desc"><em>Loper Bright</em> opened the legal door. The executive orders sent agencies through it. The patterns below show which orders, which agencies, and which months account for the bulk of the activity.</p>
         </div>
 
         <div class="spotlight">
           <div class="sl-top">
             <div class="sl-eo">The Flagship Order · EO 14192</div>
             <h3>Why one order sits behind almost everything</h3>
-            <p><em>Unleashing Prosperity Through Deregulation</em> (Jan 31, 2025) is the government-wide "10-to-1" mandate: for every new rule, agencies must identify at least ten to repeal, and hold the net cost of regulation below zero. Because it applies across the whole executive branch — not one sector — nearly every deregulatory action operates at least partly under it. That's why it's flagged on <b style="color:var(--sky)">{meta['e192_total']:,}</b> of {meta['total']:,} tracked actions, far more than any sector-specific order. The metrics below isolate how much of that is 14192 acting <em>alone</em>, and how much is high-stakes.</p>
+            <p><em>Unleashing Prosperity Through Deregulation</em> (Jan 31, 2025) is the government-wide "10-to-1" mandate. For every new rule, agencies have to find at least ten to repeal and keep the net cost of regulation below zero. It applies to the whole executive branch rather than a single sector, so almost every deregulatory action falls under it in some form. That is why it is flagged on <b style="color:var(--sky)">{meta['e192_total']:,}</b> of {meta['total']:,} tracked actions, far more than any sector-specific order. The metrics below separate out how much of that is 14192 acting on its own, and how much of it is high-stakes.</p>
           </div>
           <div class="sl-metrics">
             <div class="sl-metric" onclick="filterEO('14192')">
