@@ -805,6 +805,20 @@ def render_html(records, meta, assets):
     .footer-bottom{{border-top:1px solid rgba(255,255,255,.09);padding:18px 32px;text-align:center;font-size:12px;color:#5f7178}}
     .methodology{{font-family:'Source Serif 4',serif;font-size:13.5px;color:var(--ink-soft);margin-top:24px;line-height:1.75;max-width:88ch;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 26px}}
     .methodology b{{color:var(--ocean);font-family:'Inter'}}
+    .scoring-guide{{margin-top:14px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}}
+    .scoring-guide summary{{cursor:pointer;padding:14px 22px;font-family:'Cooper Hewitt';font-weight:700;font-size:13px;color:var(--ocean);list-style:none;display:flex;align-items:center;gap:9px;user-select:none}}
+    .scoring-guide summary::-webkit-details-marker{{display:none}}
+    .scoring-guide summary::before{{content:'+';font-size:18px;line-height:1;color:var(--harbor);font-weight:700}}
+    .scoring-guide[open] summary::before{{content:'\\2212'}}
+    .scoring-guide summary:hover{{background:var(--canvas)}}
+    .sg-body{{padding:4px 22px 20px}}
+    .sg-dim{{font-family:'Cooper Hewitt';font-weight:700;font-size:13.5px;color:var(--ocean);margin:16px 0 8px;padding-top:14px;border-top:1px solid var(--line-soft)}}
+    .sg-dim:first-child{{border-top:none;padding-top:2px}}
+    .sg-row{{font-family:'Source Serif 4',serif;font-size:13.5px;line-height:1.6;color:var(--ink-soft);margin-bottom:8px}}
+    .sg-tag{{display:inline-block;font-family:'Inter';font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:8px;vertical-align:middle}}
+    .sg-h{{color:var(--high);background:var(--high-bg)}}
+    .sg-m{{color:var(--med);background:var(--med-bg)}}
+    .sg-l{{color:var(--low);background:var(--low-bg)}}
 
     /* LOPER context band */
     .loper-band{{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:8px}}
@@ -868,7 +882,7 @@ def render_html(records, meta, assets):
       <div class="hero-inner">
         <span class="eyebrow">The End of Chevron Deference · A Recasting Regulations Report</span>
         <h1>Recasting Regulations After <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></h1>
-        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result: every rule agencies have proposed, finalized, or rescinded in the deregulatory wave that followed, each one scored for impact and tied to the executive orders behind it. The data is drawn continuously from the Federal Register.</p>
+        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result, tracking every rule agencies have proposed, finalized, or rescinded in the following deregulatory wave. Each one is scored for its impact and is tied to the executive orders behind it. This data is updated daily from the Federal Register.</p>
         <div class="hero-meta">
           <span class="live-dot" id="asof">Data current as of <strong>{meta['today']}</strong></span>
           <span>·</span><span><strong>{meta['total']:,}</strong> regulatory actions</span>
@@ -894,14 +908,14 @@ def render_html(records, meta, assets):
         <div class="section-head">
           <div class="section-kicker">The Decision Behind the Data</div>
           <h2 class="section-title">What <em style="font-style:italic">Loper Bright</em> changed</h2>
-          <p class="section-desc">Every action in this tracker sits downstream of one Supreme Court decision. Understanding it is the key to reading the record.</p>
+          <p class="section-desc">Every action in this tracker sits downstream of the <em>Loper Bright</em> Supreme Court decision. It is key to reading the record.</p>
         </div>
         <div class="loper-band">
           <div class="loper-top">
             <div class="loper-lead">
               <div>
                 <p>On <b>June 28, 2024</b>, in <em>Loper Bright Enterprises v. Raimondo</em>, the Supreme Court overruled <em>Chevron U.S.A. v. NRDC</em>. For four decades that 1984 precedent told courts to defer to an agency's reasonable interpretation whenever a statute was ambiguous. In a 6–3 decision, Chief Justice Roberts held that the Administrative Procedure Act requires courts to exercise their own independent judgment. Ambiguity alone no longer buys an agency deference.</p>
-                <p>The consequence is direct. A regulation once shielded by <em>Chevron</em> is now open to challenge on the statute's <em>single best reading</em>. Agencies have started revisiting and rescinding rules built on the old regime rather than wait for a court to do it for them, and the executive branch has pushed that review forward through a series of deregulatory orders. The regulatory actions on this page are what that has produced so far.</p>
+                <p>The consequence is direct. Hundreds of regulations once shielded by <em>Chevron</em> are now open to challenges on the statute's <em>single best reading</em>. Agencies have started revisiting and rescinding rules built on the old regime rather than waiting for a court to do it for them. The executive branch too has pushed that review forward through a series of deregulatory orders. The regulatory actions on this page represent the current progress made.</p>
               </div>
               <div class="loper-quote">
                 <blockquote>"Courts must exercise their independent judgment in deciding whether an agency has acted within its statutory authority."</blockquote>
@@ -918,7 +932,7 @@ def render_html(records, meta, assets):
             <div class="doctrine-col">
               <span class="doctrine-tag tag-after">2024 – Present · After Loper Bright</span>
               <h4>Courts say what the law is</h4>
-              <p>Judges now decide a statute's best meaning for themselves, giving the agency's view only as much weight as it earns. Rules that leaned on stretched readings of ambiguous language are the most exposed, and agencies are recasting them before a court forces the issue.</p>
+              <p>Judges now decide a statute's best meaning for themselves, giving the agency's view only as much weight as it textually deserves. Rules that leaned on expansive readings of ambiguous language are the most exposed, and agencies are recasting them before a court forces the issue.</p>
             </div>
           </div>
           <div class="era">
@@ -1121,6 +1135,19 @@ def render_html(records, meta, assets):
 
         <div class="methodology" id="methodology">
           <b>Methodology.</b> This tracker follows federal regulatory actions in the wake of <em>Loper Bright Enterprises v. Raimondo</em> (June 28, 2024), which ended <em>Chevron</em> deference and reset how courts review agency rules. Actions are drawn from the Federal Register and classified by agency, rule type, and policy area. Each is scored on two independent dimensions. <b>Impact Potential</b> measures how substantial the regulatory change is: <em>High</em> denotes substantial revisions to eligibility, compliance standards, or rules affecting many regulated parties; <em>Medium</em> denotes narrower but observable change; <em>Low</em> denotes technical corrections and administrative shifts. <b>Impact of Deregulatory Action</b> measures how directly the deregulatory executive orders drove the decision: <em>High</em> actions repeatedly cite the tracked EOs and produce observable deregulatory change or net-negative cost; <em>Medium</em> actions have limited or mixed deregulatory effect; <em>Low</em> actions cite the EOs only in passing or produce minimal burden reduction. This report is for informational and educational purposes and does not constitute legal advice.
+          <details class="scoring-guide">
+            <summary>Read the full scoring guide</summary>
+            <div class="sg-body">
+              <div class="sg-dim">Impact of Deregulatory Action</div>
+              <div class="sg-row"><span class="sg-tag sg-h">High</span>A rule is deemed to be "highly" impacted by a deregulatory action when it repeatedly lists or identifies one or multiple of the EOs on the table and has a total cost less than zero and/or makes an observable deregulatory change. The sort of actions that typically fall under this category include those that reduce compliance burdens, raise thresholds of exemptions, or actions responsible for cost savings, or those that substantially reduce regulatory burden. Receiving a high in this category does not correlate to the regulation having a substantial economic impact. Instead, this category relies on the impact of deregulatory influence on the decision.</div>
+              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>A rule marked as a medium impact deregulatory action refers to a rule that has some deregulatory effect, but the effect is observably limited or mixed or one that does not clearly rely on a deregulatory action for its decision. This category usually includes rules that simplify procedures and clarify requirements, while also including other actions that narrowly reduce overall regulatory burden. This category also includes rules with both regulatory and deregulatory language and impact.</div>
+              <div class="sg-row"><span class="sg-tag sg-l">Low</span>Actions are considered to be "low" in this category when the deregulatory EOs are mentioned only in passing in the standard review section, or when the agency directly specifies that the decision is not a deregulatory action. Included in this are rules that fail to reduce any real regulatory burden. Rules of this sort often include SIP approvals, technical corrections, routine approvals, and other actions where the deregulatory impact is minimal.</div>
+              <div class="sg-dim">Impact Potential</div>
+              <div class="sg-row"><span class="sg-tag sg-h">High</span>Rules receive a high rating in this category when they make a substantial regulatory change or cause a direct change in agency policy. This includes substantial revisions to eligibility requirements, compliance standards, and rules that have an impact on many regulated individuals. Receiving a high rating means that the rule is likely to have a significant impact on economic, social, and legal policy or substantial changes to an industry.</div>
+              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>Rules will receive a medium impact potential when they have a narrower scope than a highly ranked rule, but the impact is still observable. Actions of this nature cover updated fees, regulatory category restructuring, and changes that are applicable to a defined, specific subset of a larger regulated population. This is mostly used for practical changes that do not cause major policy shifts.</div>
+              <div class="sg-row"><span class="sg-tag sg-l">Low</span>A rule with a "low" regulatory impact refers largely to technical procedure changes, corrections and administrative shifts in department organizations. This often includes changes to terminology, routine state plan approvals, and minor burden reductions. These rules have little practical effect on any specified regulated population, and the direct legal effects of the rules in this category are usually marginal.</div>
+            </div>
+          </details>
         </div>
       </section>
     </div>
