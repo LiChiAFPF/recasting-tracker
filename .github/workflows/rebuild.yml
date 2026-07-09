@@ -1,0 +1,58 @@
+name: Rebuild Recasting Regulations tracker
+
+# Runs on a schedule, and can also be triggered by hand from the Actions tab.
+on:
+  schedule:
+    # 07:00 UTC daily = ~2-3am US Eastern. Adjust the cron if you want a
+    # different time or more frequent rebuilds (e.g. "0 */6 * * *" = every 6h).
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}   # manual "Run workflow" button
+
+# Permissions needed to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the tracker from Airtable
+        env:
+          # Stored as a repo secret -- never printed, never in the browser.
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+        run: |
+          mkdir -p _site
+          python build_tracker.py _site/index.html
+          # If the build aborts (exit 2/3) the step fails here and the old
+          # site stays live -- nothing gets deployed.
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
