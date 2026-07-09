@@ -369,6 +369,7 @@ def load_assets():
     need = {
         "logo_white": "logo_white.png",
         "logo_teal": "logo_teal.png",
+        "recasting_logo": "recasting_logo.png",
         "ch400": "cooper-hewitt-400.woff2",
         "ch600": "cooper-hewitt-600.woff2",
         "ch700": "cooper-hewitt-700.woff2",
@@ -417,6 +418,7 @@ def main():
 # ---------------------------------------------------------------------------
 def render_html(records, meta, assets):
     logo_white = assets["logo_white"]; logo_teal = assets["logo_teal"]
+    recasting_logo = assets["recasting_logo"]
     ch400 = assets["ch400"]; ch600 = assets["ch600"]
     ch700 = assets["ch700"]; ch800 = assets["ch800"]
     data_json = json.dumps(records, ensure_ascii=False)
@@ -592,7 +594,9 @@ def render_html(records, meta, assets):
     /* TOPBAR */
     .topbar{{background:var(--ocean);color:#fff;border-bottom:3px solid var(--sky)}}
     .topbar-inner{{max-width:1360px;margin:0 auto;padding:0 32px;height:66px;display:flex;align-items:center;justify-content:space-between}}
-    .brand{{display:flex;align-items:center;gap:13px}}
+    .brand{{display:flex;align-items:center;gap:13px;text-decoration:none;color:inherit}}
+    .brand:hover .brand-org{{color:var(--sky)}}
+    .brand-org{{transition:color .15s}}
     .brand img{{height:40px;width:auto;display:block}}
     .brand-text{{display:flex;flex-direction:column;line-height:1.12}}
     .brand-org{{font-family:'Cooper Hewitt';font-weight:800;font-size:15px;letter-spacing:0.01em}}
@@ -612,6 +616,13 @@ def render_html(records, meta, assets):
     .eyebrow::before{{content:'';width:26px;height:2px;background:var(--sky)}}
     .hero h1{{font-weight:800;font-size:clamp(34px,5vw,62px);line-height:1.0;letter-spacing:-0.02em;max-width:15ch;margin-bottom:22px}}
     .hero h1 .accent{{color:var(--sky)}}
+    /* Hero logo lockup (logo replaces the "Recasting Regulations" wordmark) */
+    .hero-title{{display:flex;flex-direction:column;align-items:flex-start;gap:14px;margin-bottom:24px;max-width:none}}
+    .hero-logo{{display:inline-block;transition:transform .2s,opacity .2s;opacity:.97}}
+    .hero-logo:hover{{transform:translateY(-2px);opacity:1}}
+    .hero-logo img{{height:clamp(190px,25vw,300px);width:auto;display:block}}
+    .hero-after{{font-family:'Cooper Hewitt','Inter',sans-serif;font-weight:800;font-size:clamp(30px,4.4vw,54px);line-height:1;letter-spacing:-0.02em;color:#fff;padding-left:4px}}
+    @media(max-width:640px){{.hero-logo img{{height:150px}}}}
     .hero-lede{{font-family:'Source Serif 4',serif;font-size:18px;line-height:1.6;color:#cfe5e8;max-width:60ch}}
     .hero-meta{{margin-top:26px;font-size:13px;color:#8fb5bb;display:flex;gap:18px;flex-wrap:wrap;align-items:center}}
     .hero-meta strong{{color:#fff;font-weight:600}}
@@ -627,6 +638,8 @@ def render_html(records, meta, assets):
     .stat-num{{font-family:'Cooper Hewitt';font-weight:800;font-size:40px;letter-spacing:-0.02em;color:var(--ocean);line-height:1}}
     .stat-label{{font-size:11px;text-transform:uppercase;letter-spacing:0.09em;font-weight:600;color:var(--ink-faint);margin-top:9px}}
     .stat-note{{font-size:12px;color:var(--harbor);margin-top:4px;font-weight:500}}
+
+    
 
     .wrap{{max-width:1360px;margin:0 auto;padding:0 32px}}
     .section{{padding:52px 0 8px}}
@@ -743,7 +756,9 @@ def render_html(records, meta, assets):
     .select{{background:var(--paper);border:1px solid var(--line);color:var(--ink);font-size:13px;padding:9px 30px 9px 12px;border-radius:8px;appearance:none;cursor:pointer;font-family:'Inter';max-width:230px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237c8a93' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}}
     .select:focus{{outline:none;border-color:var(--harbor)}}
     .toolbar-row2{{padding:12px 22px;border-bottom:1px solid var(--line-soft);display:flex;gap:9px;align-items:center;flex-wrap:wrap;background:var(--paper)}}
-    .tlabel{{font-size:11px;color:var(--ink-faint);font-weight:700;text-transform:uppercase;letter-spacing:0.06em}}
+    .tlabel{{font-size:11px;color:var(--ink-faint);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;min-width:132px}}
+    .tlabel-help{{font-size:11.5px;color:var(--ink-faint);font-style:italic;font-family:'Source Serif 4',serif;margin-left:4px}}
+    @media(max-width:760px){{.tlabel{{min-width:0;width:100%;margin-bottom:2px}}.tlabel-help{{display:none}}}}
     .chip{{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);transition:all .12s;user-select:none}}
     .chip:hover{{border-color:var(--harbor);color:var(--harbor)}}
     .chip.active{{background:var(--ocean);border-color:var(--ocean);color:#fff}}
@@ -859,13 +874,13 @@ def render_html(records, meta, assets):
 
     <div class="topbar">
       <div class="topbar-inner">
-        <div class="brand">
+        <a class="brand" href="https://americansforprosperityfoundation.org/" target="_blank" rel="noopener">
           <img src="data:image/png;base64,{logo_white}" alt="AFP Foundation">
           <div class="brand-text">
             <span class="brand-org">Recasting Regulations</span>
             <span class="brand-sub">Americans for Prosperity Foundation</span>
           </div>
-        </div>
+        </a>
         <nav class="topbar-nav">
           <a href="#overview">Overview</a>
           <a href="#loper">Loper Bright</a>
@@ -881,7 +896,12 @@ def render_html(records, meta, assets):
     <section class="hero" id="overview">
       <div class="hero-inner">
         <span class="eyebrow">The End of Chevron Deference · A Recasting Regulations Report</span>
-        <h1>Recasting Regulations After <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></h1>
+        <h1 class="hero-title">
+          <a class="hero-logo" href="https://americansforprosperityfoundation.org/legal/loper-bright/" target="_blank" rel="noopener" title="Recasting Regulations, a project of AFP Foundation">
+            <img src="data:image/png;base64,{recasting_logo}" alt="Recasting Regulations">
+          </a>
+          <span class="hero-after">After <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></span>
+        </h1>
         <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result, tracking every rule agencies have proposed, finalized, or rescinded in the following deregulatory wave. Each one is scored for its impact and is tied to the executive orders behind it. This data is updated daily from the Federal Register.</p>
         <div class="hero-meta">
           <span class="live-dot" id="asof">Data current as of <strong>{meta['today']}</strong></span>
@@ -1101,14 +1121,25 @@ def render_html(records, meta, assets):
             </select>
           </div>
           <div class="toolbar-row2">
-            <span class="tlabel">Impact Potential:</span>
+            <span class="tlabel">Impact Potential</span>
             <div class="chip active" data-prio="" onclick="setPrio(this,'')">All</div>
             <div class="chip" data-prio="High" onclick="setPrio(this,'High')"><span class="dot" style="background:var(--high)"></span>High</div>
             <div class="chip" data-prio="Medium" onclick="setPrio(this,'Medium')"><span class="dot" style="background:var(--med)"></span>Medium</div>
             <div class="chip" data-prio="Low" onclick="setPrio(this,'Low')"><span class="dot" style="background:var(--low)"></span>Low</div>
-            <span style="width:1px;height:22px;background:var(--line);margin:0 4px"></span>
+            <span class="tlabel-help">how big the regulatory change is</span>
+          </div>
+          <div class="toolbar-row2">
+            <span class="tlabel">Deregulatory Impact</span>
+            <div class="chip active" data-dereg="" onclick="setDereg(this,'')">All</div>
+            <div class="chip" data-dereg="High" onclick="setDereg(this,'High')"><span class="dot" style="background:var(--high)"></span>High</div>
+            <div class="chip" data-dereg="Medium" onclick="setDereg(this,'Medium')"><span class="dot" style="background:var(--med)"></span>Medium</div>
+            <div class="chip" data-dereg="Low" onclick="setDereg(this,'Low')"><span class="dot" style="background:var(--low)"></span>Low</div>
+            <span class="tlabel-help">how much the deregulatory orders drove it</span>
+          </div>
+          <div class="toolbar-row2">
+            <span class="tlabel">Quick filters</span>
+            <div class="chip hh-chip" id="hh-chip" onclick="toggleHH(this)"><span class="dot" style="background:var(--high)"></span>High on both</div>
             <div class="chip" id="loper-chip" onclick="toggleLoper(this)"><span class="dot" style="background:var(--ocean)"></span>Cites Loper Bright</div>
-            <div class="chip hh-chip" id="hh-chip" onclick="toggleHH(this)"><span class="dot" style="background:var(--high)"></span>High / High</div>
             <div class="toolbar-spacer"></div>
             <span class="result-meta" id="result-meta"></span>
             <select class="select" id="sort" style="font-size:12px"><option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option><option value="title-asc">Title A–Z</option><option value="agency-asc">Agency A–Z</option><option value="impact-desc">Impact Potential</option><option value="dereg-desc">Deregulatory Impact</option></select>
@@ -1155,7 +1186,7 @@ def render_html(records, meta, assets):
     <footer>
       <div class="footer-inner">
         <div class="footer-brand">
-          <img src="data:image/png;base64,{logo_white}" alt="AFP Foundation">
+          <a href="https://americansforprosperityfoundation.org/" target="_blank" rel="noopener"><img src="data:image/png;base64,{logo_white}" alt="AFP Foundation"></a>
           <p>A project of Americans for Prosperity Foundation tracking the impact of <em>Loper Bright</em> and the deregulatory agenda across the courts, Congress, and the federal agencies.</p>
         </div>
         <div class="footer-links">
@@ -1202,7 +1233,7 @@ def render_html(records, meta, assets):
         document.getElementById('asof').innerHTML='Data current as of <strong>'+new Date().toISOString().slice(0,10)+' (live)</strong>';
       }}catch(e){{console.warn('Live load failed, using snapshot:',e);}}
     }}
-    const PAGE=50; let filtered=[...DATA],page=1,sortKey='date-desc',fPrio='',fType='',fArea='',fAgency='',fEO='',q='',fLoper=false,fHH=false,fExcl=false;
+    const PAGE=50; let filtered=[...DATA],page=1,sortKey='date-desc',fPrio='',fDereg='',fType='',fArea='',fAgency='',fEO='',q='',fLoper=false,fHH=false,fExcl=false;
     const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const vd=d=>d&&/^20\\d\\d-\\d\\d-\\d\\d$/.test(d);
     function fmtDate(d){{if(!vd(d))return '—';const[y,m,day]=d.split('-');const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${{M[+m-1]}} ${{+day}}, ${{y}}`;}}
@@ -1244,6 +1275,7 @@ def render_html(records, meta, assets):
       const query=q.toLowerCase();
       filtered=DATA.filter(r=>{{
         if(fPrio&&r.impactPotential!==fPrio)return false;
+        if(fDereg&&r.deregImpact!==fDereg)return false;
         if(fType&&r.ruleType!==fType)return false;
         if(fArea&&r.policyArea!==fArea)return false;
         if(fAgency&&r.agency!==fAgency)return false;
@@ -1266,11 +1298,12 @@ def render_html(records, meta, assets):
       page=1;render();
     }}
     function setPrio(el,v){{fPrio=v;document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.remove('active'));el.classList.add('active');applyFilters();}}
-    function clearAll(){{fPrio=fType=fArea=fAgency=fEO=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
+    function setDereg(el,v){{fDereg=v;document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.remove('active'));el.classList.add('active');applyFilters();}}
+    function clearAll(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
     function toggleLoper(el){{fLoper=!fLoper;el.classList.toggle('active',fLoper);applyFilters();}}
     function toggleHH(el){{fHH=!fHH;el.classList.toggle('active',fHH);applyFilters();}}
-    function showLoperCited(){{fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
-    function _resetSpot(){{fPrio=fArea=fAgency=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-area','f-agency'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
+    function showLoperCited(){{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
+    function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
     function filterEO(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOExclusive(){{_resetSpot();fEO='14192';document.getElementById('f-eo').value='14192';fExcl=true;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOHH(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;fHH=true;document.getElementById('hh-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
@@ -1296,11 +1329,11 @@ def render_html(records, meta, assets):
       document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted'));th.classList.add('sorted');applyFilters();
     }});
     function jump(){{document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
-    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
-    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
-    document.querySelectorAll('.eo-card[data-eo]').forEach(b=>b.onclick=()=>{{fEO=b.dataset.eo;document.getElementById('f-eo').value=fEO;applyFilters();jump();}});
-    document.querySelectorAll('.lbar[data-area]').forEach(b=>b.onclick=()=>{{fLoper=true;document.getElementById('loper-chip').classList.add('active');fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
-    document.querySelectorAll('.lbar[data-agency]').forEach(b=>b.onclick=()=>{{fLoper=true;document.getElementById('loper-chip').classList.add('active');fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
+    document.querySelectorAll('.eo-card[data-eo]').forEach(b=>b.onclick=()=>{{_resetSpot();fEO=b.dataset.eo;document.getElementById('f-eo').value=fEO;applyFilters();jump();}});
+    document.querySelectorAll('.lbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
+    document.querySelectorAll('.lbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
     applyFilters();loadLive();
     </script>
     </body>
