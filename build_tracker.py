@@ -520,19 +520,27 @@ def render_html(records, meta, assets):
     BASE = H - 22        # y of the zero baseline
     PLOT_H = BASE - TOP  # drawable height
 
-    # "Nice" y-axis ticks: round the max up to a clean step, ~4 ticks.
-    def _nice_ceil(x):
-        import math
-        if x <= 0: return 1
-        mag = 10 ** math.floor(math.log10(x))
+    # Y-axis with STANDARD round intervals. Pick a clean step size (1/2/2.5/5 x 10^n)
+    # so ticks land on round numbers (e.g. 0,50,100,150,200,250) at any scale, and
+    # the axis top is the smallest round multiple >= the data max. Extends cleanly
+    # as the data grows past 250.
+    import math
+    def _nice_step(rough):
+        if rough <= 0: return 1
+        mag = 10 ** math.floor(math.log10(rough))
         for m in (1, 2, 2.5, 5, 10):
-            if x <= m * mag: return int(m * mag) if (m*mag) >= 1 else m*mag
+            if rough <= m * mag:
+                s = m * mag
+                return int(s) if s >= 1 else s
         return int(10 * mag)
-    y_top = _nice_ceil(tl_max)
-    # choose ~4 evenly spaced ticks including 0
-    tick_steps = 4
-    ticks = [round(y_top * k / tick_steps) for k in range(tick_steps + 1)]
-    ticks = sorted(set(ticks))
+    target_ticks = 5                      # aim for ~5 intervals
+    step = _nice_step(tl_max / target_ticks)
+    if not isinstance(step, int):         # 2.5x cases -> keep range() integer-safe
+        step = int(round(step)) or 1
+    y_top = int(math.ceil(tl_max / step) * step)   # round axis top up to a full step
+    if y_top <= 0: y_top = step
+    ticks = list(range(0, y_top + 1, step))
+    if ticks[-1] != y_top: ticks.append(y_top)
 
     n = len(tl)
     plot_w = W - PAD*2 - AXIS_W
