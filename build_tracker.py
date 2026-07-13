@@ -431,12 +431,11 @@ def render_html(records, meta, assets):
     area_high_bars = ""
     for name, n in area_high:
         tot = area_total.get(name, n)
-        pct_of_area = n/tot*100 if tot else 0
         barpct = n/maxv*100
         area_high_bars += f'''      <div class="hbar" data-area="{esc(name)}" title="{n} of {tot} actions in {esc(name)} rated High impact potential">
             <div class="hbar-label">{esc(name)}</div>
             <div class="hbar-track"><div class="hbar-fill" style="width:{barpct:.1f}%"></div></div>
-            <div class="hbar-num">{n}<span class="hbar-pct">{pct_of_area:.0f}%</span></div>
+            <div class="hbar-num">{n}</div>
           </div>
     '''
 
@@ -489,6 +488,14 @@ def render_html(records, meta, assets):
     '''
     loper_agency = meta['loper_by_agency']
     lamax = loper_agency[0][1] if loper_agency else 1
+    # Dynamic lead agency for the narrative (auto-updates if the ranking changes)
+    if loper_agency:
+        _lead_full = loper_agency[0][0]
+        _loper_lead_name = _lead_full.replace("Comm'n","Commission").replace("Nat'l","National")
+        _n = loper_agency[0][1]
+        _loper_lead_n = f"{_n} such action" + ("" if _n == 1 else "s")
+    else:
+        _loper_lead_name = "No single agency"; _loper_lead_n = "any yet"
     loper_agency_bars = ""
     for name, n in loper_agency:
         short = name.replace("Comm'n","Commission").replace("Environmental Protection Agency","EPA").replace("Health & Human Services","HHS").replace("Nat'l","National")
@@ -602,6 +609,8 @@ def render_html(records, meta, assets):
     .brand-org{{font-family:'Cooper Hewitt';font-weight:800;font-size:15px;letter-spacing:0.01em}}
     .brand-sub{{font-size:10.5px;color:var(--sky);letter-spacing:0.03em;text-transform:uppercase}}
     .topbar-nav{{display:flex;gap:26px;align-items:center}}
+    .hero-method-btn{{display:inline-flex;align-items:center;gap:7px;margin-top:20px;padding:9px 16px;border:1px solid rgba(137,210,217,.4);border-radius:8px;background:rgba(137,210,217,.08);color:var(--sky);font-family:'Inter';font-size:13px;font-weight:600;text-decoration:none;transition:background .15s,border-color .15s}}
+    .hero-method-btn:hover{{background:rgba(137,210,217,.16);border-color:var(--sky)}}
     .topbar-nav a{{color:#bfe2e6;text-decoration:none;font-size:13px;font-weight:500;transition:color .15s}}
     .topbar-nav a:hover{{color:#fff}}
     .topbar-cta{{background:var(--sky);color:var(--ocean);padding:8px 16px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none}}
@@ -781,6 +790,11 @@ def render_html(records, meta, assets):
     .rule-title a{{color:var(--ocean);text-decoration:none}}
     .rule-title a:hover{{color:var(--harbor);text-decoration:underline}}
     .rule-desc{{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:5px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}
+    .rule-desc.open{{display:block;-webkit-line-clamp:unset}}
+    .desc-wrap{{margin:5px 0}}
+    .desc-wrap .rule-desc{{margin:0}}
+    .desc-toggle{{background:none;border:none;padding:2px 0 0;margin:0;color:var(--harbor);font-family:'Inter';font-size:12px;font-weight:600;cursor:pointer}}
+    .desc-toggle:hover{{color:var(--ocean);text-decoration:underline}}
     .rule-meta{{font-size:11.5px;color:var(--ink-faint)}}
     .agency-name{{font-weight:500;color:var(--ink);font-size:13px}}
     .agency-sub{{font-size:11.5px;color:var(--ink-faint);margin-top:2px}}
@@ -888,6 +902,7 @@ def render_html(records, meta, assets):
           <a href="#findings">Key Findings</a>
           <a href="#analysis">Analysis</a>
           <a href="#tracker">Full Tracker</a>
+          <a href="#methodology" onclick="openMethodology(event)">Methodology</a>
           <a class="topbar-cta" href="https://americansforprosperityfoundation.org/subscribe-to-loper-bright-updates/" target="_blank" rel="noopener">Subscribe</a>
         </nav>
       </div>
@@ -909,6 +924,9 @@ def render_html(records, meta, assets):
           <span>·</span><span><strong>{meta['agencies_count']}</strong> federal agencies</span>
           <span>·</span><span><strong>{len(meta['eo_counts'])}</strong> executive orders tracked</span>
         </div>
+        <a href="#methodology" class="hero-method-btn" onclick="openMethodology(event)">How we score each rule
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
       </div>
     </section>
 
@@ -989,7 +1007,7 @@ def render_html(records, meta, assets):
         <div class="grid2">
           <div class="card">
             <div class="card-title">High-Impact Actions by Policy Area</div>
-            <div class="card-sub">Count of actions rated <b>High</b> impact potential · share of area in gray · click to filter</div>
+            <div class="card-sub">Actions rated <b>High</b> impact potential, by policy area · click any bar to filter the tracker</div>
     {area_high_bars}      </div>
           <div class="card">
             <div class="card-title">High-Impact Actions by Agency</div>
@@ -1012,7 +1030,7 @@ def render_html(records, meta, assets):
             <div class="lc-big">{meta['loper_total']}<small>ACTIONS CITE LOPER BRIGHT</small></div>
             <div class="lc-head-text">
               <h3>The doctrine is doing work on the page</h3>
-              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning, and {meta['loper_high']} of those carry high impact potential. The Environmental Protection Agency leads. It is using the decision to reopen air, water, and permitting rules that stood for decades on deference alone.</p>
+              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning, and {meta['loper_high']} of those carry high impact potential. {esc(_loper_lead_name)} leads with {_loper_lead_n}, using the decision to reopen rules that stood for years on deference alone.</p>
             </div>
           </div>
           <div class="lc-body">
@@ -1251,7 +1269,9 @@ def render_html(records, meta, assets):
         const eos=(r.eoNumbers||[]).map(e=>`<span class="eo-tag">EO ${{esc(e)}}</span>`).join('');
         const loperTag=r.citesLoper?`<span class="loper-badge">Cites Loper Bright</span>`:'';
         const hhTag=r.highHigh?`<span class="hh-marker">◆ High / High</span>`:'';
-        const desc=r.description?`<div class="rule-desc">${{esc(r.description)}}</div>`:'';
+        const desc=r.description?(r.description.length>120
+          ?`<div class="desc-wrap"><div class="rule-desc">${{esc(r.description)}}</div><button class="desc-toggle" onclick="toggleDesc(this)">Show more</button></div>`
+          :`<div class="rule-desc rule-desc-short">${{esc(r.description)}}</div>`):'';
         const cit=r.citation?`<span>${{esc(r.citation)}}</span> `:'';
         return `<tr>
           <td><div class="rule-title">${{t}}</div>${{desc}}<div class="rule-meta">${{cit}}${{eos}}</div><div>${{loperTag}} ${{hhTag}}</div></td>
@@ -1302,6 +1322,8 @@ def render_html(records, meta, assets):
     function clearAll(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
     function toggleLoper(el){{fLoper=!fLoper;el.classList.toggle('active',fLoper);applyFilters();}}
     function toggleHH(el){{fHH=!fHH;el.classList.toggle('active',fHH);applyFilters();}}
+    function toggleDesc(btn){{const w=btn.parentNode;const open=w.classList.toggle('open');w.querySelector('.rule-desc').classList.toggle('open',open);btn.textContent=open?'Show less':'Show more';}}
+    function openMethodology(e){{if(e)e.preventDefault();var g=document.querySelector('.scoring-guide');if(g)g.open=true;var m=document.getElementById('methodology');if(m)m.scrollIntoView({{behavior:'smooth',block:'start'}});}}
     function showLoperCited(){{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
     function filterEO(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
@@ -1329,8 +1351,8 @@ def render_html(records, meta, assets):
       document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted'));th.classList.add('sorted');applyFilters();
     }});
     function jump(){{document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
-    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
-    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
     document.querySelectorAll('.eo-card[data-eo]').forEach(b=>b.onclick=()=>{{_resetSpot();fEO=b.dataset.eo;document.getElementById('f-eo').value=fEO;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
