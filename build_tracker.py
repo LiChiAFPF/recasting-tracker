@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build_tracker.py  --  Recasting Regulations: Federal Deregulation Tracker
+build_tracker.py  --  Recasting Regulations: Federal Regulatory Reform Tracker
 =========================================================================
 Fetches the tracker data from Airtable, validates the table's shape against a
 known-good contract, then rebuilds the standalone HTML report with fresh data.
@@ -314,9 +314,14 @@ def compute_meta(clean):
     excl_hh192 = [r for r in excl192 if r["highHigh"]]
 
     month = Counter()
+    # Dynamic window: start at the deregulatory era (2025-01) and extend through
+    # the current month plus 3 months of headroom for post-dated Federal Register
+    # entries. Computed from today's date so the chart self-extends into 2027+.
+    _tot = date.today().year * 12 + (date.today().month - 1) + 3
+    upper_bound = f"{_tot // 12}-{_tot % 12 + 1:02d}"
     for r in clean:
         d = r["datePublished"]
-        if d and len(d) == 10 and d.startswith("20") and "2025-01" <= d[:7] <= "2026-12":
+        if d and len(d) == 10 and d.startswith("20") and "2025-01" <= d[:7] <= upper_bound:
             month[d[:7]] += 1
     timeline = [(m, month[m]) for m in sorted(month)]
     types = Counter(r["ruleType"] for r in clean if r["ruleType"])
@@ -518,7 +523,7 @@ def render_html(records, meta, assets):
         bh = (v/tl_max)*(H-40)
         x = PAD + i*bw
         y = H-20-bh
-        tl_bars += f'<rect x="{x+bw*0.12:.1f}" y="{y:.1f}" width="{bw*0.76:.1f}" height="{bh:.1f}" rx="2" fill="url(#tlgrad)"><title>{m}: {v} actions</title></rect>'
+        tl_bars += f'<rect class="tl-bar" data-month="{m}" x="{x+bw*0.12:.1f}" y="{y:.1f}" width="{bw*0.76:.1f}" height="{bh:.1f}" rx="2" fill="url(#tlgrad)" style="cursor:pointer"><title>{m}: {v} actions — click to filter</title></rect>'
         if m.endswith('-01') or m.endswith('-07'):
             yr = m[:4]; mo = m[5:7]
             lab = {'01':'Jan','07':'Jul'}[mo] + " '" + yr[2:]
@@ -537,8 +542,8 @@ def render_html(records, meta, assets):
         if not v: continue
         pct = v/total*100
         label = name.replace('Notice of Proposed Rule Making','NPRM').replace('Interim/Interim Final Rule','Interim')
-        type_seg += f'<div class="tseg" style="width:{pct:.2f}%;background:{color}" title="{esc(name)}: {v}"></div>'
-        type_leg += f'<div class="tleg-item"><span class="tleg-sw" style="background:{color}"></span>{esc(label)} <b>{v}</b></div>'
+        type_seg += f'<div class="tseg" data-type="{esc(name)}" style="width:{pct:.2f}%;background:{color};cursor:pointer" title="{esc(name)}: {v} — click to filter"></div>'
+        type_leg += f'<div class="tleg-item" data-type="{esc(name)}" style="cursor:pointer"><span class="tleg-sw" style="background:{color}"></span>{esc(label)} <b>{v}</b></div>'
 
     # Fonts
     font_css = f"""
@@ -559,7 +564,7 @@ def render_html(records, meta, assets):
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recasting Regulations: Tracking Deregulation After Loper Bright | AFP Foundation</title>
+    <title>Recasting Regulations: Tracking Regulatory Reform After Loper Bright | AFP Foundation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -750,6 +755,10 @@ def render_html(records, meta, assets):
     .tbar{{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}}
     .tseg{{transition:opacity .12s}}
     .tseg:hover{{opacity:0.82}}
+    .tl-bar{{transition:opacity .12s}}
+    .tl-bar:hover{{opacity:0.75}}
+    .tleg-item[data-type]:hover{{color:var(--ocean)}}
+    .tleg-item[data-type]:hover .tleg-sw{{outline:2px solid var(--harbor);outline-offset:1px}}
     .tleg{{display:flex;flex-wrap:wrap;gap:9px 20px;margin-top:14px}}
     .tleg-item{{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:7px}}
     .tleg-sw{{width:11px;height:11px;border-radius:3px}}
@@ -917,7 +926,7 @@ def render_html(records, meta, assets):
           </a>
           <span class="hero-after">After <span class="accent"><em style="font-style:italic;font-weight:800">Loper Bright</em></span></span>
         </h1>
-        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result, tracking every rule agencies have proposed, finalized, or rescinded in the following deregulatory wave. Each one is scored for its impact and is tied to the executive orders behind it. This data is updated daily from the Federal Register.</p>
+        <p class="hero-lede">In June 2024, the Supreme Court ended forty years of <em>Chevron</em> deference. Courts, not agencies, now say what the law means. That single decision is reshaping the federal rulebook. This report follows the result, tracking every rule agencies have proposed, finalized, or rescinded in the following wave of reform. Each one is scored for its impact and is tied to the executive orders behind it. This data is updated daily from the Federal Register.</p>
         <div class="hero-meta">
           <span class="live-dot" id="asof">Data current as of <strong>{meta['today']}</strong></span>
           <span>·</span><span><strong>{meta['total']:,}</strong> regulatory actions</span>
@@ -933,7 +942,7 @@ def render_html(records, meta, assets):
     <div class="stats">
       <div class="stats-grid">
         <div class="stat"><div class="stat-num">{meta['total']:,}</div><div class="stat-label">Total Actions</div><div class="stat-note">All rule types</div></div>
-        <div class="stat"><div class="stat-num">{meta['high_potential']:,}</div><div class="stat-label">High Impact Potential</div><div class="stat-note">{meta['high_potential']/meta['total']*100:.0f}% of all actions</div></div>
+        <div class="stat"><div class="stat-num">{meta['high_potential']:,}</div><div class="stat-label">High Regulatory Impact</div><div class="stat-note">{meta['high_potential']/meta['total']*100:.0f}% of all actions</div></div>
         <div class="stat"><div class="stat-num">{meta['finals']:,}</div><div class="stat-label">Final Rules</div><div class="stat-note">{meta['finals']/meta['total']*100:.0f}% enacted</div></div>
         <div class="stat"><div class="stat-num">{meta['highhigh']:,}</div><div class="stat-label">High / High Actions</div><div class="stat-note">high impact + high dereg</div></div>
         <div class="stat"><div class="stat-num">{meta['agencies_count']}</div><div class="stat-label">Agencies</div><div class="stat-note">Executive &amp; independent</div></div>
@@ -953,7 +962,7 @@ def render_html(records, meta, assets):
             <div class="loper-lead">
               <div>
                 <p>On <b>June 28, 2024</b>, in <em>Loper Bright Enterprises v. Raimondo</em>, the Supreme Court overruled <em>Chevron U.S.A. v. NRDC</em>. For four decades that 1984 precedent told courts to defer to an agency's reasonable interpretation whenever a statute was ambiguous. In a 6–3 decision, Chief Justice Roberts held that the Administrative Procedure Act requires courts to exercise their own independent judgment. Ambiguity alone no longer buys an agency deference.</p>
-                <p>The consequence is direct. Hundreds of regulations once shielded by <em>Chevron</em> are now open to challenges on the statute's <em>single best reading</em>. Agencies have started revisiting and rescinding rules built on the old regime rather than waiting for a court to do it for them. The executive branch too has pushed that review forward through a series of deregulatory orders. The regulatory actions on this page represent the current progress made.</p>
+                <p>The consequence is direct. Hundreds of regulations once shielded by <em>Chevron</em> are now open to challenges on the statute's <em>single best reading</em>. Agencies have started revisiting and rescinding rules built on the old regime rather than waiting for a court to do it for them. The executive branch too has pushed that review forward through a series of regulatory reforms. The regulatory actions on this page represent the current progress made.</p>
               </div>
               <div class="loper-quote">
                 <blockquote>"Courts must exercise their independent judgment in deciding whether an agency has acted within its statutory authority."</blockquote>
@@ -978,7 +987,7 @@ def render_html(records, meta, assets):
             <div class="era-track">
               <div class="era-step"><div class="era-date">1984</div><div class="era-label"><em>Chevron</em> establishes agency deference</div></div>
               <div class="era-step key"><div class="era-date">Jun 2024</div><div class="era-label"><em>Loper Bright</em> overrules <em>Chevron</em></div></div>
-              <div class="era-step"><div class="era-date">Jan 2025</div><div class="era-label">Deregulatory executive orders begin</div></div>
+              <div class="era-step"><div class="era-date">Jan 2025</div><div class="era-label">Reform executive orders begin</div></div>
               <div class="era-step key"><div class="era-date">2025–26</div><div class="era-label">{meta['total']:,} regulatory actions tracked</div></div>
               <div class="era-step"><div class="era-date">Ongoing</div><div class="era-label">Rescissions &amp; court challenges continue</div></div>
             </div>
@@ -993,14 +1002,14 @@ def render_html(records, meta, assets):
         <div class="section-head">
           <div class="section-kicker">Key Findings</div>
           <h2 class="section-title">Where the rollback is landing</h2>
-          <p class="section-desc">Each action is scored on two dimensions. <b>Impact Potential</b> measures how substantial the regulatory change is. <b>Impact of Deregulatory Action</b> measures how directly the deregulatory executive orders drove it. The findings below rank the policy areas seeing the most substantive change as agencies rewrite rules for the world after <em>Chevron</em>.</p>
+          <p class="section-desc">Each action is scored on two dimensions. <b>Regulatory Impact</b> measures how substantial the change is. <b>Reform Influence</b> measures how directly the Loper Bright ruling and the executive orders drove it. The findings below rank the policy areas seeing the most substantive change as agencies rework rules for the world after <em>Chevron</em>.</p>
         </div>
 
         <div class="finding">
           <div class="finding-big">{top_area[1]}<small>HIGH-IMPACT ACTIONS IN {top_area[0].upper()}</small></div>
           <div class="finding-text">
-            <h3>{top_area[0]} leads the deregulatory agenda</h3>
-            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} carry high impact potential. That is the heaviest concentration of substantive change in any single policy area, and it is where the deregulatory agenda has moved fastest.</p>
+            <h3>{top_area[0]} leads the reform agenda</h3>
+            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} carry high regulatory impact. That is the heaviest concentration of substantive change in any single policy area, and it is where the reform agenda has moved fastest.</p>
           </div>
         </div>
 
@@ -1062,7 +1071,7 @@ def render_html(records, meta, assets):
           <div class="sl-top">
             <div class="sl-eo">The Flagship Order · EO 14192</div>
             <h3>Why one order sits behind almost everything</h3>
-            <p><em>Unleashing Prosperity Through Deregulation</em> (Jan 31, 2025) is the government-wide "10-to-1" mandate. For every new rule, agencies have to find at least ten to repeal and keep the net cost of regulation below zero. It applies to the whole executive branch rather than a single sector, so almost every deregulatory action falls under it in some form. That is why it is flagged on <b style="color:var(--sky)">{meta['e192_total']:,}</b> of {meta['total']:,} tracked actions, far more than any sector-specific order. The metrics below separate out how much of that is 14192 acting on its own, and how much of it is high-stakes.</p>
+            <p><em>Unleashing Prosperity Through Deregulation</em> (Jan 31, 2025) is the government-wide "10-to-1" mandate. For every new rule, agencies have to find at least ten to repeal and keep the net cost of regulation below zero. It applies to the whole executive branch rather than a single sector, so almost every reform action falls under it in some form. That is why it is flagged on <b style="color:var(--sky)">{meta['e192_total']:,}</b> of {meta['total']:,} tracked actions, far more than any sector-specific order. The metrics below separate out how much of that is 14192 acting on its own, and how much of it is high-stakes.</p>
           </div>
           <div class="sl-metrics">
             <div class="sl-metric" onclick="filterEO('14192')">
@@ -1090,7 +1099,7 @@ def render_html(records, meta, assets):
 
         <div class="card" style="margin-top:24px">
           <div class="card-title">Executive Orders Driving the Agenda</div>
-          <div class="card-sub">Actions flagged to each EO (a rule may fall under several) · high/high = high impact potential + high deregulatory impact · click to filter</div>
+          <div class="card-sub">Actions flagged to each order (a rule may fall under several) · high/high = high regulatory impact + high reform influence · click to filter</div>
           <div class="eo-grid">
     {eo_cards}      </div>
         </div>
@@ -1118,7 +1127,7 @@ def render_html(records, meta, assets):
       <section class="section" id="tracker">
         <div class="section-head">
           <div class="section-kicker">The Record</div>
-          <h2 class="section-title">Full deregulation tracker</h2>
+          <h2 class="section-title">Full regulatory reform tracker</h2>
           <p class="section-desc">Search and filter every tracked action. Click a rule title to open the source document in the Federal Register.</p>
         </div>
         <div class="tracker-shell">
@@ -1139,7 +1148,7 @@ def render_html(records, meta, assets):
             </select>
           </div>
           <div class="toolbar-row2">
-            <span class="tlabel">Impact Potential</span>
+            <span class="tlabel">Regulatory Impact</span>
             <div class="chip active" data-prio="" onclick="setPrio(this,'')">All</div>
             <div class="chip" data-prio="High" onclick="setPrio(this,'High')"><span class="dot" style="background:var(--high)"></span>High</div>
             <div class="chip" data-prio="Medium" onclick="setPrio(this,'Medium')"><span class="dot" style="background:var(--med)"></span>Medium</div>
@@ -1147,12 +1156,12 @@ def render_html(records, meta, assets):
             <span class="tlabel-help">how big the regulatory change is</span>
           </div>
           <div class="toolbar-row2">
-            <span class="tlabel">Deregulatory Impact</span>
+            <span class="tlabel">Reform Influence</span>
             <div class="chip active" data-dereg="" onclick="setDereg(this,'')">All</div>
             <div class="chip" data-dereg="High" onclick="setDereg(this,'High')"><span class="dot" style="background:var(--high)"></span>High</div>
             <div class="chip" data-dereg="Medium" onclick="setDereg(this,'Medium')"><span class="dot" style="background:var(--med)"></span>Medium</div>
             <div class="chip" data-dereg="Low" onclick="setDereg(this,'Low')"><span class="dot" style="background:var(--low)"></span>Low</div>
-            <span class="tlabel-help">how much the deregulatory orders drove it</span>
+            <span class="tlabel-help">how much Loper Bright and the orders drove it</span>
           </div>
           <div class="toolbar-row2">
             <span class="tlabel">Quick filters</span>
@@ -1160,7 +1169,7 @@ def render_html(records, meta, assets):
             <div class="chip" id="loper-chip" onclick="toggleLoper(this)"><span class="dot" style="background:var(--ocean)"></span>Cites Loper Bright</div>
             <div class="toolbar-spacer"></div>
             <span class="result-meta" id="result-meta"></span>
-            <select class="select" id="sort" style="font-size:12px"><option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option><option value="title-asc">Title A–Z</option><option value="agency-asc">Agency A–Z</option><option value="impact-desc">Impact Potential</option><option value="dereg-desc">Deregulatory Impact</option></select>
+            <select class="select" id="sort" style="font-size:12px"><option value="date-desc">Newest First</option><option value="date-asc">Oldest First</option><option value="title-asc">Title A–Z</option><option value="agency-asc">Agency A–Z</option><option value="impact-desc">Regulatory Impact</option><option value="dereg-desc">Reform Influence</option></select>
             <button class="btn-ghost" onclick="clearAll()">Clear</button>
             <button class="btn-export" onclick="exportCSV()"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1v9m0 0l3-3m-3 3L5 7M2 12v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Export CSV</button>
           </div>
@@ -1170,8 +1179,8 @@ def render_html(records, meta, assets):
                 <th data-sort="title" style="width:36%">Rule / Action</th>
                 <th data-sort="agency" style="width:16%">Agency</th>
                 <th data-sort="type" style="width:12%">Type</th>
-                <th data-sort="impact" style="width:10%">Impact Potential</th>
-                <th data-sort="dereg" style="width:10%">Dereg. Impact</th>
+                <th data-sort="impact" style="width:10%">Regulatory Impact</th>
+                <th data-sort="dereg" style="width:10%">Reform Influence</th>
                 <th data-sort="date" style="width:8%">Published</th>
                 <th data-sort="area" style="width:8%">Policy Area</th>
               </tr></thead>
@@ -1183,17 +1192,17 @@ def render_html(records, meta, assets):
         </div>
 
         <div class="methodology" id="methodology">
-          <b>Methodology.</b> This tracker follows federal regulatory actions in the wake of <em>Loper Bright Enterprises v. Raimondo</em> (June 28, 2024), which ended <em>Chevron</em> deference and reset how courts review agency rules. Actions are drawn from the Federal Register and classified by agency, rule type, and policy area. Each is scored on two independent dimensions. <b>Impact Potential</b> measures how substantial the regulatory change is: <em>High</em> denotes substantial revisions to eligibility, compliance standards, or rules affecting many regulated parties; <em>Medium</em> denotes narrower but observable change; <em>Low</em> denotes technical corrections and administrative shifts. <b>Impact of Deregulatory Action</b> measures how directly the deregulatory executive orders drove the decision: <em>High</em> actions repeatedly cite the tracked EOs and produce observable deregulatory change or net-negative cost; <em>Medium</em> actions have limited or mixed deregulatory effect; <em>Low</em> actions cite the EOs only in passing or produce minimal burden reduction. This report is for informational and educational purposes and does not constitute legal advice.
+          <b>Methodology.</b> This tracker follows federal regulatory actions in the wake of <em>Loper Bright Enterprises v. Raimondo</em> (June 28, 2024), which ended <em>Chevron</em> deference and reset how courts review agency rules. Actions are drawn from the Federal Register and classified by agency, rule type, and policy area. Each is scored on two independent dimensions. <b>Regulatory Impact</b> measures how substantial the change is: <em>High</em> denotes substantial revisions to eligibility, compliance standards, or rules affecting many regulated parties; <em>Medium</em> denotes narrower but observable change; <em>Low</em> denotes technical corrections and administrative shifts. <b>Reform Influence</b> measures how directly the Loper Bright ruling and the reform-minded executive orders drove the decision: <em>High</em> actions repeatedly cite the tracked orders and produce an observable reduction in regulatory burden or net-negative cost; <em>Medium</em> actions have limited or mixed reform effect; <em>Low</em> actions cite the orders only in passing, are administrative or housekeeping in nature, or produce minimal change in burden. A high Regulatory Impact score does not by itself imply a rule is strongly reform-driven, and vice versa. This report is for informational and educational purposes and does not constitute legal advice.
           <details class="scoring-guide">
             <summary>Read the full scoring guide</summary>
             <div class="sg-body">
-              <div class="sg-dim">Impact of Deregulatory Action</div>
-              <div class="sg-row"><span class="sg-tag sg-h">High</span>A rule is deemed to be "highly" impacted by a deregulatory action when it repeatedly lists or identifies one or multiple of the EOs on the table and has a total cost less than zero and/or makes an observable deregulatory change. The sort of actions that typically fall under this category include those that reduce compliance burdens, raise thresholds of exemptions, or actions responsible for cost savings, or those that substantially reduce regulatory burden. Receiving a high in this category does not correlate to the regulation having a substantial economic impact. Instead, this category relies on the impact of deregulatory influence on the decision.</div>
-              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>A rule marked as a medium impact deregulatory action refers to a rule that has some deregulatory effect, but the effect is observably limited or mixed or one that does not clearly rely on a deregulatory action for its decision. This category usually includes rules that simplify procedures and clarify requirements, while also including other actions that narrowly reduce overall regulatory burden. This category also includes rules with both regulatory and deregulatory language and impact.</div>
-              <div class="sg-row"><span class="sg-tag sg-l">Low</span>Actions are considered to be "low" in this category when the deregulatory EOs are mentioned only in passing in the standard review section, or when the agency directly specifies that the decision is not a deregulatory action. Included in this are rules that fail to reduce any real regulatory burden. Rules of this sort often include SIP approvals, technical corrections, routine approvals, and other actions where the deregulatory impact is minimal.</div>
-              <div class="sg-dim">Impact Potential</div>
+              <div class="sg-dim">Reform Influence <span style="font-weight:400;color:var(--ink-faint)">(how much the reform agenda drove the action)</span></div>
+              <div class="sg-row"><span class="sg-tag sg-h">High</span>A rule is deemed to be "highly" influenced by the reform agenda when it repeatedly lists or identifies one or multiple of the executive orders on the table and has a total cost less than zero and/or makes an observable reduction in regulatory burden. The sort of actions that typically fall under this category include those that reduce compliance burdens, raise thresholds of exemptions, or actions responsible for cost savings, or those that substantially reduce regulatory burden. Receiving a high in this category does not correlate to the regulation having a substantial economic impact. Instead, this category relies on how much the reform effort influenced the decision.</div>
+              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>A rule marked as a medium reform influence refers to a rule that has some reform effect, but the effect is observably limited or mixed, or one that does not clearly rely on the reform agenda for its decision. This category usually includes rules that simplify procedures and clarify requirements, while also including other actions that narrowly reduce overall regulatory burden. This category also includes rules with both regulatory and deregulatory language and impact.</div>
+              <div class="sg-row"><span class="sg-tag sg-l">Low</span>Actions are considered to be "low" in this category when the reform executive orders are mentioned only in passing in the standard review section, or when the agency directly specifies that the decision is not a reform action. Included in this are rules that fail to reduce any real regulatory burden. Rules of this sort often include SIP approvals, technical corrections, routine approvals, and other actions where the reform influence is minimal.</div>
+              <div class="sg-dim">Regulatory Impact <span style="font-weight:400;color:var(--ink-faint)">(how substantial the change is)</span></div>
               <div class="sg-row"><span class="sg-tag sg-h">High</span>Rules receive a high rating in this category when they make a substantial regulatory change or cause a direct change in agency policy. This includes substantial revisions to eligibility requirements, compliance standards, and rules that have an impact on many regulated individuals. Receiving a high rating means that the rule is likely to have a significant impact on economic, social, and legal policy or substantial changes to an industry.</div>
-              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>Rules will receive a medium impact potential when they have a narrower scope than a highly ranked rule, but the impact is still observable. Actions of this nature cover updated fees, regulatory category restructuring, and changes that are applicable to a defined, specific subset of a larger regulated population. This is mostly used for practical changes that do not cause major policy shifts.</div>
+              <div class="sg-row"><span class="sg-tag sg-m">Medium</span>Rules will receive a medium regulatory impact when they have a narrower scope than a highly ranked rule, but the impact is still observable. Actions of this nature cover updated fees, regulatory category restructuring, and changes that are applicable to a defined, specific subset of a larger regulated population. This is mostly used for practical changes that do not cause major policy shifts.</div>
               <div class="sg-row"><span class="sg-tag sg-l">Low</span>A rule with a "low" regulatory impact refers largely to technical procedure changes, corrections and administrative shifts in department organizations. This often includes changes to terminology, routine state plan approvals, and minor burden reductions. These rules have little practical effect on any specified regulated population, and the direct legal effects of the rules in this category are usually marginal.</div>
             </div>
           </details>
@@ -1205,7 +1214,7 @@ def render_html(records, meta, assets):
       <div class="footer-inner">
         <div class="footer-brand">
           <a href="https://americansforprosperityfoundation.org/" target="_blank" rel="noopener"><img src="data:image/png;base64,{logo_white}" alt="AFP Foundation"></a>
-          <p>A project of Americans for Prosperity Foundation tracking the impact of <em>Loper Bright</em> and the deregulatory agenda across the courts, Congress, and the federal agencies.</p>
+          <p>A project of Americans for Prosperity Foundation tracking the impact of <em>Loper Bright</em> and the regulatory reform agenda across the courts, Congress, and the federal agencies.</p>
         </div>
         <div class="footer-links">
           <div class="footer-col"><h4>Program</h4>
@@ -1220,7 +1229,7 @@ def render_html(records, meta, assets):
           </div>
         </div>
       </div>
-      <div class="footer-bottom">© 2026 Americans for Prosperity Foundation · Recasting Regulations Deregulation Tracker</div>
+      <div class="footer-bottom">© 2026 Americans for Prosperity Foundation · Recasting Regulations: Regulatory Reform Tracker</div>
     </footer>
 
     <script>
@@ -1251,7 +1260,7 @@ def render_html(records, meta, assets):
         document.getElementById('asof').innerHTML='Data current as of <strong>'+new Date().toISOString().slice(0,10)+' (live)</strong>';
       }}catch(e){{console.warn('Live load failed, using snapshot:',e);}}
     }}
-    const PAGE=50; let filtered=[...DATA],page=1,sortKey='date-desc',fPrio='',fDereg='',fType='',fArea='',fAgency='',fEO='',q='',fLoper=false,fHH=false,fExcl=false;
+    const PAGE=50; let filtered=[...DATA],page=1,sortKey='date-desc',fPrio='',fDereg='',fType='',fArea='',fAgency='',fEO='',fMonth='',q='',fLoper=false,fHH=false,fExcl=false;
     const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const vd=d=>d&&/^20\\d\\d-\\d\\d-\\d\\d$/.test(d);
     function fmtDate(d){{if(!vd(d))return '—';const[y,m,day]=d.split('-');const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return `${{M[+m-1]}} ${{+day}}, ${{y}}`;}}
@@ -1297,6 +1306,7 @@ def render_html(records, meta, assets):
         if(fPrio&&r.impactPotential!==fPrio)return false;
         if(fDereg&&r.deregImpact!==fDereg)return false;
         if(fType&&r.ruleType!==fType)return false;
+        if(fMonth&&(r.datePublished||'').slice(0,7)!==fMonth)return false;
         if(fArea&&r.policyArea!==fArea)return false;
         if(fAgency&&r.agency!==fAgency)return false;
         if(fEO&&!(r.eoNumbers||[]).includes(fEO))return false;
@@ -1319,20 +1329,20 @@ def render_html(records, meta, assets):
     }}
     function setPrio(el,v){{fPrio=v;document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.remove('active'));el.classList.add('active');applyFilters();}}
     function setDereg(el,v){{fDereg=v;document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.remove('active'));el.classList.add('active');applyFilters();}}
-    function clearAll(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
+    function clearAll(){{fPrio=fDereg=fType=fArea=fAgency=fEO=fMonth=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
     function toggleLoper(el){{fLoper=!fLoper;el.classList.toggle('active',fLoper);applyFilters();}}
     function toggleHH(el){{fHH=!fHH;el.classList.toggle('active',fHH);applyFilters();}}
     function toggleDesc(btn){{const w=btn.parentNode;const open=w.classList.toggle('open');w.querySelector('.rule-desc').classList.toggle('open',open);btn.textContent=open?'Show less':'Show more';}}
     function openMethodology(e){{if(e)e.preventDefault();var g=document.querySelector('.scoring-guide');if(g)g.open=true;var m=document.getElementById('methodology');if(m)m.scrollIntoView({{behavior:'smooth',block:'start'}});}}
     function showLoperCited(){{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
-    function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
+    function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=fMonth=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
     function filterEO(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOExclusive(){{_resetSpot();fEO='14192';document.getElementById('f-eo').value='14192';fExcl=true;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOHH(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;fHH=true;document.getElementById('hh-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOExclusiveHH(){{_resetSpot();fEO='14192';document.getElementById('f-eo').value='14192';fExcl=true;fHH=true;document.getElementById('hh-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function exportCSV(){{
       const cols=['title','agency','subAgency','ruleType','impactPotential','deregImpact','highHigh','policyArea','datePublished','citation','eoNumbers','citesLoper','url'];
-      const head=['Rule/Action','Agency','Sub-Agency','Type','Impact Potential','Deregulatory Impact','High/High','Policy Area','Published','Citation','Executive Orders','Cites Loper Bright','URL'];
+      const head=['Rule/Action','Agency','Sub-Agency','Type','Regulatory Impact','Reform Influence','High/High','Policy Area','Published','Citation','Executive Orders','Cites Loper Bright','URL'];
       const rows=filtered.map(r=>cols.map(c=>{{let v=r[c];if(c==='citesLoper'||c==='highHigh')v=v?'Yes':'No';if(Array.isArray(v))v=v.join('; ');v=(v==null?'':String(v)).replace(/\\n/g,' ').replace(/"/g,'""');return `"${{v}}"`;}}).join(','));
       const csv=[head.map(h=>`"${{h}}"`).join(','),...rows].join('\\n');
       const blob=new Blob([csv],{{type:'text/csv'}}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='recasting-regulations-tracker.csv';a.click();URL.revokeObjectURL(url);
@@ -1356,6 +1366,10 @@ def render_html(records, meta, assets):
     document.querySelectorAll('.eo-card[data-eo]').forEach(b=>b.onclick=()=>{{_resetSpot();fEO=b.dataset.eo;document.getElementById('f-eo').value=fEO;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
+    // Timeline month bars -> filter tracker to that month
+    document.querySelectorAll('.tl-bar[data-month]').forEach(b=>b.onclick=()=>{{_resetSpot();fMonth=b.dataset.month;applyFilters();jump();}});
+    // Rule-type segments and legend -> filter tracker by rule type
+    document.querySelectorAll('[data-type]').forEach(el=>el.onclick=()=>{{_resetSpot();fType=el.dataset.type;document.getElementById('f-type').value=fType;applyFilters();jump();}});
     applyFilters();loadLive();
     </script>
     </body>
