@@ -514,15 +514,43 @@ def render_html(records, meta, assets):
     # ---- Timeline sparkline (SVG) ----
     tl = meta['timeline']
     tl_max = max(v for _,v in tl) if tl else 1
-    W, H, PAD = 900, 200, 8
+    W, H, PAD = 900, 210, 8
+    AXIS_W = 34          # left gutter for y-axis labels
+    TOP = 12             # top padding
+    BASE = H - 22        # y of the zero baseline
+    PLOT_H = BASE - TOP  # drawable height
+
+    # "Nice" y-axis ticks: round the max up to a clean step, ~4 ticks.
+    def _nice_ceil(x):
+        import math
+        if x <= 0: return 1
+        mag = 10 ** math.floor(math.log10(x))
+        for m in (1, 2, 2.5, 5, 10):
+            if x <= m * mag: return int(m * mag) if (m*mag) >= 1 else m*mag
+        return int(10 * mag)
+    y_top = _nice_ceil(tl_max)
+    # choose ~4 evenly spaced ticks including 0
+    tick_steps = 4
+    ticks = [round(y_top * k / tick_steps) for k in range(tick_steps + 1)]
+    ticks = sorted(set(ticks))
+
     n = len(tl)
-    bw = (W - PAD*2) / n
+    plot_w = W - PAD*2 - AXIS_W
+    bw = plot_w / n
+
+    # gridlines + y labels
+    tl_grid = ""; tl_ylabels = ""
+    for tv in ticks:
+        gy = BASE - (tv / y_top) * PLOT_H
+        tl_grid += f'<line class="tl-grid" x1="{PAD+AXIS_W}" y1="{gy:.1f}" x2="{W-PAD}" y2="{gy:.1f}"/>'
+        tl_ylabels += f'<text class="tl-ylab" x="{PAD+AXIS_W-6}" y="{gy+3.5:.1f}" text-anchor="end">{tv:,}</text>'
+
     tl_bars = ""
     tl_labels = ""
     for i,(m,v) in enumerate(tl):
-        bh = (v/tl_max)*(H-40)
-        x = PAD + i*bw
-        y = H-20-bh
+        bh = (v/y_top)*PLOT_H
+        x = PAD + AXIS_W + i*bw
+        y = BASE - bh
         tl_bars += f'<rect class="tl-bar" data-month="{m}" x="{x+bw*0.12:.1f}" y="{y:.1f}" width="{bw*0.76:.1f}" height="{bh:.1f}" rx="2" fill="url(#tlgrad)" style="cursor:pointer"><title>{m}: {v} actions — click to filter</title></rect>'
         if m.endswith('-01') or m.endswith('-07'):
             yr = m[:4]; mo = m[5:7]
@@ -747,8 +775,10 @@ def render_html(records, meta, assets):
 
     /* Timeline */
     .tl-wrap{{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin-top:24px}}
-    .tl-svg{{width:100%;height:auto;display:block;margin-top:8px}}
+    .tl-svg{{width:100%;height:auto;display:block;margin-top:8px;aspect-ratio:900/210}}
     .tl-lab{{font-size:11px;fill:var(--ink-faint);font-family:'Inter'}}
+    .tl-grid{{stroke:var(--line-soft);stroke-width:1;shape-rendering:crispEdges}}
+    .tl-ylab{{font-size:10.5px;fill:var(--ink-faint);font-family:'Inter'}}
 
     /* type distribution */
     .tdist{{margin-top:24px}}
@@ -944,7 +974,7 @@ def render_html(records, meta, assets):
         <div class="stat"><div class="stat-num">{meta['total']:,}</div><div class="stat-label">Total Actions</div><div class="stat-note">All rule types</div></div>
         <div class="stat"><div class="stat-num">{meta['high_potential']:,}</div><div class="stat-label">High Regulatory Impact</div><div class="stat-note">{meta['high_potential']/meta['total']*100:.0f}% of all actions</div></div>
         <div class="stat"><div class="stat-num">{meta['finals']:,}</div><div class="stat-label">Final Rules</div><div class="stat-note">{meta['finals']/meta['total']*100:.0f}% enacted</div></div>
-        <div class="stat"><div class="stat-num">{meta['highhigh']:,}</div><div class="stat-label">High / High Actions</div><div class="stat-note">high impact + high dereg</div></div>
+        <div class="stat"><div class="stat-num">{meta['highhigh']:,}</div><div class="stat-label">High / High Actions</div><div class="stat-note">high regulatory impact + high reform influence</div></div>
         <div class="stat"><div class="stat-num">{meta['agencies_count']}</div><div class="stat-label">Agencies</div><div class="stat-note">Executive &amp; independent</div></div>
       </div>
     </div>
@@ -1087,7 +1117,7 @@ def render_html(records, meta, assets):
             <div class="sl-metric hh" onclick="filterEOHH('14192')">
               <div class="sl-metric-num">{meta['e192_hh']}</div>
               <div class="sl-metric-label">EO 14192 <b>high / high</b> actions</div>
-              <div class="sl-metric-sub">high impact + high dereg →</div>
+              <div class="sl-metric-sub">high regulatory impact + high reform influence →</div>
             </div>
             <div class="sl-metric hh" onclick="filterEOExclusiveHH()">
               <div class="sl-metric-num">{meta['e192_excl_hh']}</div>
@@ -1109,7 +1139,7 @@ def render_html(records, meta, assets):
           <div class="card-sub">Actions by month published in the Federal Register</div>
           <svg class="tl-svg" viewBox="0 0 {W} {H}" preserveAspectRatio="none">
             <defs><linearGradient id="tlgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00788c"/><stop offset="1" stop-color="#89d2d9"/></linearGradient></defs>
-            {tl_bars}{tl_labels}
+            {tl_grid}{tl_ylabels}{tl_bars}{tl_labels}
           </svg>
         </div>
 
@@ -1278,9 +1308,7 @@ def render_html(records, meta, assets):
         const eos=(r.eoNumbers||[]).map(e=>`<span class="eo-tag">EO ${{esc(e)}}</span>`).join('');
         const loperTag=r.citesLoper?`<span class="loper-badge">Cites Loper Bright</span>`:'';
         const hhTag=r.highHigh?`<span class="hh-marker">◆ High / High</span>`:'';
-        const desc=r.description?(r.description.length>120
-          ?`<div class="desc-wrap"><div class="rule-desc">${{esc(r.description)}}</div><button class="desc-toggle" onclick="toggleDesc(this)">Show more</button></div>`
-          :`<div class="rule-desc rule-desc-short">${{esc(r.description)}}</div>`):'';
+        const desc=r.description?`<div class="desc-wrap"><div class="rule-desc">${{esc(r.description)}}</div><button class="desc-toggle" onclick="toggleDesc(this)" hidden>Show more</button></div>`:'';
         const cit=r.citation?`<span>${{esc(r.citation)}}</span> `:'';
         return `<tr>
           <td><div class="rule-title">${{t}}</div>${{desc}}<div class="rule-meta">${{cit}}${{eos}}</div><div>${{loperTag}} ${{hhTag}}</div></td>
@@ -1292,7 +1320,21 @@ def render_html(records, meta, assets):
           <td style="color:var(--ink-soft)">${{esc(r.policyArea||'—')}}</td>
         </tr>`;
       }}).join('');
+      _syncDescToggles();
       renderPag(total,start,end);
+    }}
+    // Show a "Show more" button only on descriptions that are actually clamped
+    // (truncated). Measures the rendered DOM, so it is correct for every row at
+    // any column width, regardless of the description's character count.
+    function _syncDescToggles(){{
+      document.querySelectorAll('#tbody .desc-wrap').forEach(w=>{{
+        const d=w.querySelector('.rule-desc'), btn=w.querySelector('.desc-toggle');
+        if(!d||!btn) return;
+        // reset to collapsed state before measuring
+        d.classList.remove('open'); btn.textContent='Show more';
+        const clamped = d.scrollHeight - d.clientHeight > 4;
+        btn.hidden = !clamped;
+      }});
     }}
     function renderPag(total,start,end){{
       const pg=document.getElementById('pagination'),pages=Math.ceil(total/PAGE);let b='';
@@ -1332,7 +1374,7 @@ def render_html(records, meta, assets):
     function clearAll(){{fPrio=fDereg=fType=fArea=fAgency=fEO=fMonth=q='';fLoper=false;fHH=false;fExcl=false;sortKey='date-desc';document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.getElementById('sort').value='date-desc';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');applyFilters();}}
     function toggleLoper(el){{fLoper=!fLoper;el.classList.toggle('active',fLoper);applyFilters();}}
     function toggleHH(el){{fHH=!fHH;el.classList.toggle('active',fHH);applyFilters();}}
-    function toggleDesc(btn){{const w=btn.parentNode;const open=w.classList.toggle('open');w.querySelector('.rule-desc').classList.toggle('open',open);btn.textContent=open?'Show less':'Show more';}}
+    function toggleDesc(btn){{const w=btn.parentNode;const d=w.querySelector('.rule-desc');const open=!d.classList.contains('open');d.classList.toggle('open',open);btn.hidden=false;btn.textContent=open?'Show less':'Show more';}}
     function openMethodology(e){{if(e)e.preventDefault();var g=document.querySelector('.scoring-guide');if(g)g.open=true;var m=document.getElementById('methodology');if(m)m.scrollIntoView({{behavior:'smooth',block:'start'}});}}
     function showLoperCited(){{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=fMonth=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
@@ -1370,6 +1412,8 @@ def render_html(records, meta, assets):
     document.querySelectorAll('.tl-bar[data-month]').forEach(b=>b.onclick=()=>{{_resetSpot();fMonth=b.dataset.month;applyFilters();jump();}});
     // Rule-type segments and legend -> filter tracker by rule type
     document.querySelectorAll('[data-type]').forEach(el=>el.onclick=()=>{{_resetSpot();fType=el.dataset.type;document.getElementById('f-type').value=fType;applyFilters();jump();}});
+    let _rz;window.addEventListener('resize',()=>{{clearTimeout(_rz);_rz=setTimeout(_syncDescToggles,150);}});
+    if(document.fonts&&document.fonts.ready){{document.fonts.ready.then(()=>_syncDescToggles());}}
     applyFilters();loadLive();
     </script>
     </body>
