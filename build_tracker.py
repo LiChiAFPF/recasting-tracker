@@ -55,8 +55,8 @@ CORE_FIELDS = {
     "fldCJYupgPD0Jf9aV": ("agency",          "singleSelect"),
     "fldsXXljpYgXCnyGe": ("subAgency",       "singleSelect"),
     "fldCbEJizbYcaRcYy": ("ruleType",        "singleSelect"),
-    "fldTo9mHipkxesPw3": ("deregImpact",     "singleSelect"),   # Impact of Deregulatory Action
-    "fldvcEFyep5EKYhhE": ("impactPotential", "singleSelect"),   # Impact Potential
+    "fldTo9mHipkxesPw3": ("impactPotential", "singleSelect"),   # Airtable "Impact Potential" -> Regulatory Impact (substance)
+    "fldvcEFyep5EKYhhE": ("deregImpact",     "singleSelect"),   # Airtable "Impact of Dereg EO" -> Reform Influence
     "fldpVtSmPDOSDJ5Q2": ("policyArea",      "singleSelect"),
     "fldfseGX1D0EHjQAX": ("datePublished",   None),             # date/text; type not enforced
     "fldpcO04XenqvYh7J": ("deadlineDate",    None),
@@ -262,8 +262,8 @@ def clean_records(raw):
         for t in _multi(f.get("fldX6IeppsTs62iC6")):
             if t in tag_only:
                 eos.add(t)
-        ip = _sel(f.get("fldvcEFyep5EKYhhE"))
-        di = _sel(f.get("fldTo9mHipkxesPw3"))
+        ip = _sel(f.get("fldTo9mHipkxesPw3"))   # Impact Potential (substance) -> Regulatory Impact
+        di = _sel(f.get("fldvcEFyep5EKYhhE"))   # Impact of Dereg EO (influence) -> Reform Influence
         clean.append({
             "id": r.get("id"),
             "title": title,
@@ -437,7 +437,7 @@ def render_html(records, meta, assets):
     for name, n in area_high:
         tot = area_total.get(name, n)
         barpct = n/maxv*100
-        area_high_bars += f'''      <div class="hbar" data-area="{esc(name)}" title="{n} of {tot} actions in {esc(name)} rated High impact potential">
+        area_high_bars += f'''      <div class="hbar" data-area="{esc(name)}" title="{n} of {tot} actions in {esc(name)} rated High regulatory impact">
             <div class="hbar-label">{esc(name)}</div>
             <div class="hbar-track"><div class="hbar-fill" style="width:{barpct:.1f}%"></div></div>
             <div class="hbar-num">{n}</div>
@@ -1054,11 +1054,11 @@ def render_html(records, meta, assets):
         <div class="grid2">
           <div class="card">
             <div class="card-title">High-Impact Actions by Policy Area</div>
-            <div class="card-sub">Actions rated <b>High</b> impact potential, by policy area · click any bar to filter the tracker</div>
+            <div class="card-sub">Actions rated <b>High</b> regulatory impact, by policy area · click any bar to filter the tracker</div>
     {area_high_bars}      </div>
           <div class="card">
             <div class="card-title">High-Impact Actions by Agency</div>
-            <div class="card-sub">Top 12 agencies by high-impact volume · click to filter</div>
+            <div class="card-sub">Top 12 agencies by volume of <b>High</b> regulatory impact actions · click to filter</div>
     {agency_high_bars}      </div>
         </div>
       </section>
@@ -1077,7 +1077,7 @@ def render_html(records, meta, assets):
             <div class="lc-big">{meta['loper_total']}<small>ACTIONS CITE LOPER BRIGHT</small></div>
             <div class="lc-head-text">
               <h3>The doctrine is doing work on the page</h3>
-              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning, and {meta['loper_high']} of those carry high impact potential. {esc(_loper_lead_name)} leads with {_loper_lead_n}, using the decision to reopen rules that stood for years on deference alone.</p>
+              <p>Of {meta['total']:,} tracked actions, {meta['loper_total']} invoke <em>Loper Bright</em> or the fall of <em>Chevron</em> directly in their reasoning, and {meta['loper_high']} of those carry high regulatory impact. {esc(_loper_lead_name)} leads with {_loper_lead_n}, using the decision to reopen rules that stood for years on deference alone.</p>
             </div>
           </div>
           <div class="lc-body">
@@ -1273,7 +1273,7 @@ def render_html(records, meta, assets):
     <script>
     const SNAPSHOT = {data_json};
     const AIRTABLE_CONFIG = {{ token:"", baseId:"appPUrk3pj2BEN3sZ", tableId:"tblHrsoSoqSoKlpv4" }};
-    const FIELD_MAP = {{title:'fldRpFlrZUO40mVxE',agency:'fldCJYupgPD0Jf9aV',subAgency:'fldsXXljpYgXCnyGe',ruleType:'fldCbEJizbYcaRcYy',deregImpact:'fldTo9mHipkxesPw3',impactPotential:'fldvcEFyep5EKYhhE',policyArea:'fldpVtSmPDOSDJ5Q2',datePublished:'fldfseGX1D0EHjQAX',deadlineDate:'fldpcO04XenqvYh7J',url:'fldO7Ad6cg4wUe8LK',citation:'fldOk5Vfsk3xfA5pQ',description:'fldJN9MVwC2gE9p3Z',eoNumbers:'fldX6IeppsTs62iC6',citesLoper:'fldAHYCrKc1noJlqQ'}};
+    const FIELD_MAP = {{title:'fldRpFlrZUO40mVxE',agency:'fldCJYupgPD0Jf9aV',subAgency:'fldsXXljpYgXCnyGe',ruleType:'fldCbEJizbYcaRcYy',impactPotential:'fldTo9mHipkxesPw3',deregImpact:'fldvcEFyep5EKYhhE',policyArea:'fldpVtSmPDOSDJ5Q2',datePublished:'fldfseGX1D0EHjQAX',deadlineDate:'fldpcO04XenqvYh7J',url:'fldO7Ad6cg4wUe8LK',citation:'fldOk5Vfsk3xfA5pQ',description:'fldJN9MVwC2gE9p3Z',eoNumbers:'fldX6IeppsTs62iC6',citesLoper:'fldAHYCrKc1noJlqQ'}};
     const EO_CHECKBOX = {{'14154':'fldfqPkwwysl9xHGo','14192':'fldNh6ebD2uUGjMMG','14215':'fldhE7GGx8pKlKnDp','14219':'fldd3Zk2n7fQZrJrA','14267':'fldK6rWxap6vJkf0C','14276':'fldJh8EDTt69FpbtB','14281':'fldCHRKSTiGUNf8c6','14294':'fld7B4R3woLsHCPXy','14332':'fldrTKWzMx22MDHXm','14335':'fldKsJ0LnLzX5Imz9'}};
     let DATA = SNAPSHOT;
     async function loadLive(){{
