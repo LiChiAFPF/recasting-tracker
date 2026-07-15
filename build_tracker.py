@@ -650,7 +650,8 @@ def render_html(records, meta, assets):
     .brand-org{{font-family:'Cooper Hewitt';font-weight:800;font-size:15px;letter-spacing:0.01em}}
     .brand-sub{{font-size:10.5px;color:var(--sky);letter-spacing:0.03em;text-transform:uppercase}}
     .topbar-nav{{display:flex;gap:26px;align-items:center}}
-    .hero-method-btn{{display:inline-flex;align-items:center;gap:7px;margin-top:20px;padding:9px 16px;border:1px solid rgba(137,210,217,.4);border-radius:8px;background:rgba(137,210,217,.08);color:var(--sky);font-family:'Inter';font-size:13px;font-weight:600;text-decoration:none;transition:background .15s,border-color .15s}}
+    .hero-btn-row{{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}}
+    .hero-method-btn{{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border:1px solid rgba(137,210,217,.4);border-radius:8px;background:rgba(137,210,217,.08);color:var(--sky);font-family:'Inter';font-size:13px;font-weight:600;text-decoration:none;transition:background .15s,border-color .15s}}
     .hero-method-btn:hover{{background:rgba(137,210,217,.16);border-color:var(--sky)}}
     .topbar-nav a{{color:#bfe2e6;text-decoration:none;font-size:13px;font-weight:500;transition:color .15s}}
     .topbar-nav a:hover{{color:#fff}}
@@ -684,6 +685,9 @@ def render_html(records, meta, assets):
     .stats{{max-width:1360px;margin:-34px auto 0;padding:0 32px;position:relative;z-index:5}}
     .stats-grid{{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 44px rgba(0,71,80,.12);display:grid;grid-template-columns:repeat(5,1fr)}}
     .stat{{padding:24px 26px;border-right:1px solid var(--line-soft)}}
+    .stat-click{{cursor:pointer;transition:background .15s}}
+    .stat-click:hover{{background:var(--canvas)}}
+    .stat-click:hover .stat-num{{color:var(--harbor)}}
     .stat:last-child{{border-right:none}}
     .stat-num{{font-family:'Cooper Hewitt';font-weight:800;font-size:40px;letter-spacing:-0.02em;color:var(--ocean);line-height:1}}
     .stat-label{{font-size:11px;text-transform:uppercase;letter-spacing:0.09em;font-weight:600;color:var(--ink-faint);margin-top:9px}}
@@ -971,19 +975,24 @@ def render_html(records, meta, assets):
           <span>·</span><span><strong>{meta['agencies_count']}</strong> federal agencies</span>
           <span>·</span><span><strong>{len(meta['eo_counts'])}</strong> executive orders tracked</span>
         </div>
-        <a href="#methodology" class="hero-method-btn" onclick="openMethodology(event)">How we score each rule
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
+        <div class="hero-btn-row">
+          <a href="#methodology" class="hero-method-btn" onclick="openMethodology(event)">How we score each rule
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="#tracker" class="hero-method-btn" onclick="event.preventDefault();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});">Jump to the tracker
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v9m0 0l4-4m-4 4L4 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
       </div>
     </section>
 
     <div class="stats">
       <div class="stats-grid">
-        <div class="stat"><div class="stat-num">{meta['total']:,}</div><div class="stat-label">Total Actions</div><div class="stat-note">All rule types</div></div>
-        <div class="stat"><div class="stat-num">{meta['high_potential']:,}</div><div class="stat-label">High Regulatory Impact</div><div class="stat-note">{meta['high_potential']/meta['total']*100:.0f}% of all actions</div></div>
-        <div class="stat"><div class="stat-num">{meta['finals']:,}</div><div class="stat-label">Final Rules</div><div class="stat-note">{meta['finals']/meta['total']*100:.0f}% enacted</div></div>
-        <div class="stat"><div class="stat-num">{meta['highhigh']:,}</div><div class="stat-label">High / High Actions</div><div class="stat-note">high regulatory impact + high reform influence</div></div>
-        <div class="stat"><div class="stat-num">{meta['agencies_count']}</div><div class="stat-label">Agencies</div><div class="stat-note">Executive &amp; independent</div></div>
+        <div class="stat stat-click" onclick="statFilter('all')"><div class="stat-num">{meta['total']:,}</div><div class="stat-label">Total Actions</div><div class="stat-note">All rule types</div></div>
+        <div class="stat stat-click" onclick="statFilter('highimpact')"><div class="stat-num">{meta['high_potential']:,}</div><div class="stat-label">High Regulatory Impact</div><div class="stat-note">{meta['high_potential']/meta['total']*100:.0f}% of all actions</div></div>
+        <div class="stat stat-click" onclick="statFilter('final')"><div class="stat-num">{meta['finals']:,}</div><div class="stat-label">Final Rules</div><div class="stat-note">{meta['finals']/meta['total']*100:.0f}% enacted</div></div>
+        <div class="stat stat-click" onclick="statFilter('highhigh')"><div class="stat-num">{meta['highhigh']:,}</div><div class="stat-label">High / High Actions</div><div class="stat-note">high regulatory impact + high reform influence</div></div>
+        <div class="stat stat-click" onclick="statFilter('agencies')"><div class="stat-num">{meta['agencies_count']}</div><div class="stat-label">Agencies</div><div class="stat-note">Executive &amp; independent</div></div>
       </div>
     </div>
 
@@ -1385,6 +1394,15 @@ def render_html(records, meta, assets):
     function toggleDesc(btn){{const w=btn.parentNode;const d=w.querySelector('.rule-desc');const open=!d.classList.contains('open');d.classList.toggle('open',open);btn.hidden=false;btn.textContent=open?'Show less':'Show more';}}
     function openMethodology(e){{if(e)e.preventDefault();var g=document.querySelector('.scoring-guide');if(g)g.open=true;var m=document.getElementById('methodology');if(m)m.scrollIntoView({{behavior:'smooth',block:'start'}});}}
     function showLoperCited(){{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
+    function statFilter(kind){{
+      _resetSpot();
+      if(kind==='highimpact'){{fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));}}
+      else if(kind==='final'){{fType='Final Rule';document.getElementById('f-type').value=fType;}}
+      else if(kind==='highhigh'){{fHH=true;document.getElementById('hh-chip').classList.add('active');}}
+      // 'all' and 'agencies' just clear and jump (Agencies is a distinct-count, not a single filterable slice)
+      applyFilters();
+      document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});
+    }}
     function _resetSpot(){{fPrio=fDereg=fType=fArea=fAgency=fEO=fMonth=q='';fLoper=false;fExcl=false;fHH=false;document.getElementById('search').value='';['f-type','f-area','f-agency','f-eo'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===''));document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===''));document.getElementById('loper-chip').classList.remove('active');document.getElementById('hh-chip').classList.remove('active');}}
     function filterEO(eo){{_resetSpot();fEO=eo;document.getElementById('f-eo').value=eo;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
     function filterEOExclusive(){{_resetSpot();fEO='14192';document.getElementById('f-eo').value='14192';fExcl=true;applyFilters();document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
