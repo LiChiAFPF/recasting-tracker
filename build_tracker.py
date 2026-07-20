@@ -296,6 +296,10 @@ def compute_meta(clean):
     area_high = Counter(r["policyArea"] for r in high if r["policyArea"])
     agency_high = Counter(r["agency"] for r in high if r["agency"])
     dhigh = [r for r in clean if r["deregImpact"] == "High"]
+    # Key Findings ranks on Reform Influence (deregImpact) = the actions most driven
+    # by the reform agenda, which is what this site is about.
+    area_reform = Counter(r["policyArea"] for r in dhigh if r["policyArea"])
+    agency_reform = Counter(r["agency"] for r in dhigh if r["agency"])
     hh = [r for r in clean if r["highHigh"]]
 
     eo_counts, eo_high, eo_hh = Counter(), Counter(), Counter()
@@ -337,6 +341,8 @@ def compute_meta(clean):
         "agencies": sorted(set(r["agency"] for r in clean if r["agency"])),
         "policy_areas": sorted(area_total.keys()),
         "area_high": area_high.most_common(),
+        "area_reform": area_reform.most_common(),
+        "agency_reform": agency_reform.most_common(12),
         "area_total": dict(area_total),
         "agency_high": agency_high.most_common(12),
         "eo_counts": eo_counts.most_common(),
@@ -429,33 +435,38 @@ def render_html(records, meta, assets):
     data_json = json.dumps(records, ensure_ascii=False)
     esc = lambda s: str(s).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
-    # ---- Analysis bars: High impact-potential by policy area ----
-    area_high = meta['area_high']
+    # ---- Key Findings bars: build both Reform Influence and Regulatory Impact sets ----
     area_total = meta['area_total']
-    maxv = area_high[0][1]
-    area_high_bars = ""
-    for name, n in area_high:
-        tot = area_total.get(name, n)
-        barpct = n/maxv*100
-        area_high_bars += f'''      <div class="hbar" data-area="{esc(name)}" title="{n} of {tot} actions in {esc(name)} rated High regulatory impact">
+    def _area_bars(ranking, dim, dim_label):
+        mx = ranking[0][1] if ranking else 1
+        out = ""
+        for name, n in ranking:
+            tot = area_total.get(name, n)
+            out += f'''      <div class="hbar" data-area="{esc(name)}" data-dim="{dim}" title="{n} of {tot} actions in {esc(name)} rated High {dim_label}">
             <div class="hbar-label">{esc(name)}</div>
-            <div class="hbar-track"><div class="hbar-fill" style="width:{barpct:.1f}%"></div></div>
+            <div class="hbar-track"><div class="hbar-fill" style="width:{n/mx*100:.1f}%"></div></div>
             <div class="hbar-num">{n}</div>
           </div>
     '''
-
-    # ---- Agency high-impact bars ----
-    agency_high = meta['agency_high']
-    amax = agency_high[0][1]
-    agency_high_bars = ""
-    for name, n in agency_high:
-        short = name.replace("Comm'n","Commission").replace("Admin.","Administration").replace("Nat'l","National").replace("Environmental Protection Agency","EPA").replace("Health & Human Services","HHS")
-        agency_high_bars += f'''      <div class="hbar" data-agency="{esc(name)}">
+        return out
+    def _agency_bars(ranking, dim):
+        mx = ranking[0][1] if ranking else 1
+        out = ""
+        for name, n in ranking:
+            short = name.replace("Comm'n","Commission").replace("Admin.","Administration").replace("Nat'l","National").replace("Environmental Protection Agency","EPA").replace("Health & Human Services","HHS")
+            out += f'''      <div class="hbar" data-agency="{esc(name)}" data-dim="{dim}">
             <div class="hbar-label">{esc(short)}</div>
-            <div class="hbar-track"><div class="hbar-fill alt" style="width:{n/amax*100:.1f}%"></div></div>
+            <div class="hbar-track"><div class="hbar-fill alt" style="width:{n/mx*100:.1f}%"></div></div>
             <div class="hbar-num">{n}</div>
           </div>
     '''
+        return out
+    # Reform Influence (deregImpact) ranking — the primary "ones we care about" view
+    area_reform_bars   = _area_bars(meta['area_reform'], 'reform', 'reform influence')
+    agency_reform_bars = _agency_bars(meta['agency_reform'], 'reform')
+    # Regulatory Impact (impactPotential) ranking — the "biggest changes" view
+    area_impact_bars   = _area_bars(meta['area_high'], 'impact', 'regulatory impact')
+    agency_impact_bars = _agency_bars(meta['agency_high'], 'impact')
 
     # ---- EO cards ---- (checkbox-based counts, sorted by volume; 14192 leads)
     eo_counts = dict(meta['eo_counts'])
@@ -594,7 +605,8 @@ def render_html(records, meta, assets):
     area_opts = "\n".join(f'        <option>{esc(a)}</option>' for a in meta['policy_areas'])
     eo_opts = "\n".join(f'        <option value="{e}">EO {e}: {esc(eo_info.get(e,{}).get("name",""))} ({eo_counts[e]:,})</option>' for e in meta['eos_sorted'])
 
-    top_area = meta['area_high'][0]
+    top_area = meta['area_reform'][0]        # Reform Influence leader (primary view)
+    top_area_impact = meta['area_high'][0]   # Regulatory Impact leader (second view)
     html = f'''<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -704,6 +716,10 @@ def render_html(records, meta, assets):
 
     /* KEY FINDING callout */
     .finding{{background:linear-gradient(120deg,var(--ocean),var(--harbor));color:#fff;border-radius:14px;padding:30px 34px;margin-bottom:28px;display:flex;gap:34px;align-items:center;flex-wrap:wrap}}
+    .finding-alt{{background:linear-gradient(120deg,var(--midnight),var(--ocean))}}
+    .finding-alt .finding-big{{color:var(--sky)}}
+    .finding-divider{{display:flex;align-items:center;text-align:center;gap:16px;margin:8px 0 26px;color:var(--ink-faint);font-family:'Inter';font-size:12.5px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}}
+    .finding-divider::before,.finding-divider::after{{content:"";flex:1;height:1px;background:var(--line)}}
     .finding-big{{font-family:'Cooper Hewitt';font-weight:800;font-size:58px;line-height:0.95;color:var(--sky)}}
     .finding-big small{{display:block;font-size:14px;color:#cfe5e8;font-weight:600;letter-spacing:0.03em;margin-top:6px;font-family:'Inter'}}
     .finding-text{{flex:1;min-width:260px}}
@@ -1049,14 +1065,35 @@ def render_html(records, meta, assets):
         <div class="section-head">
           <div class="section-kicker">Key Findings</div>
           <h2 class="section-title">Where the rollback is landing</h2>
-          <p class="section-desc">Each action is scored on two dimensions. <b>Regulatory Impact</b> measures how substantial the change is. <b>Reform Influence</b> measures how directly the Loper Bright ruling and the executive orders drove it. The findings below rank the policy areas seeing the most substantive change as agencies rework rules for the world after <em>Chevron</em>.</p>
+          <p class="section-desc">Each action is scored on two dimensions. <b>Regulatory Impact</b> measures how substantial the change is. <b>Reform Influence</b> measures how directly the Loper Bright ruling and the executive orders drove it. The findings below rank the policy areas most driven by the reform agenda as agencies rework rules for the world after <em>Chevron</em>.</p>
         </div>
 
         <div class="finding">
-          <div class="finding-big">{top_area[1]}<small>HIGH-IMPACT ACTIONS IN {top_area[0].upper()}</small></div>
+          <div class="finding-big">{top_area[1]}<small>HIGH REFORM-INFLUENCE ACTIONS IN {top_area[0].upper()}</small></div>
           <div class="finding-text">
             <h3>{top_area[0]} leads the reform agenda</h3>
-            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} carry high regulatory impact. That is the heaviest concentration of substantive change in any single policy area, and it is where the reform agenda has moved fastest.</p>
+            <p>Of {meta['area_total'][top_area[0]]:,} tracked actions in {top_area[0]}, {top_area[1]} are strongly driven by the reform agenda. That is the heaviest concentration of reform-driven change in any single policy area, and it is where the push to recast the rulebook has moved fastest.</p>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title">Reform-Driven Actions by Policy Area</div>
+            <div class="card-sub">Actions rated <b>High</b> reform influence, by policy area · click any bar to filter the tracker</div>
+    {area_reform_bars}      </div>
+          <div class="card">
+            <div class="card-title">Reform-Driven Actions by Agency</div>
+            <div class="card-sub">Top 12 agencies by volume of <b>High</b> reform influence actions · click to filter</div>
+    {agency_reform_bars}      </div>
+        </div>
+
+        <div class="finding-divider"><span>The other lens: where the biggest rule changes are</span></div>
+
+        <div class="finding finding-alt">
+          <div class="finding-big">{top_area_impact[1]}<small>HIGH-IMPACT ACTIONS IN {top_area_impact[0].upper()}</small></div>
+          <div class="finding-text">
+            <h3>{top_area_impact[0]} sees the most substantive change</h3>
+            <p><b>Regulatory Impact</b> represents how substantial each change is, regardless of what drove the regulatory action. {top_area_impact[0]} carries the most high-impact actions, {top_area_impact[1]} of {meta['area_total'][top_area_impact[0]]:,} tracked in the area. High reform influence and high impact often overlap, but not always. This table shows the highest impact regulations even where the reform orders were not the primary driver.</p>
           </div>
         </div>
 
@@ -1064,11 +1101,11 @@ def render_html(records, meta, assets):
           <div class="card">
             <div class="card-title">High-Impact Actions by Policy Area</div>
             <div class="card-sub">Actions rated <b>High</b> regulatory impact, by policy area · click any bar to filter the tracker</div>
-    {area_high_bars}      </div>
+    {area_impact_bars}      </div>
           <div class="card">
             <div class="card-title">High-Impact Actions by Agency</div>
             <div class="card-sub">Top 12 agencies by volume of <b>High</b> regulatory impact actions · click to filter</div>
-    {agency_high_bars}      </div>
+    {agency_impact_bars}      </div>
         </div>
       </section>
     </div>
@@ -1429,8 +1466,8 @@ def render_html(records, meta, assets):
       document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted'));th.classList.add('sorted');applyFilters();
     }});
     function jump(){{document.getElementById('tracker').scrollIntoView({{behavior:'smooth'}});}}
-    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
-    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();if(b.dataset.dim==='impact'){{fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));}}else{{fDereg='High';document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===fDereg));}}fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
+    document.querySelectorAll('.hbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();if(b.dataset.dim==='impact'){{fPrio='High';document.querySelectorAll('.chip[data-prio]').forEach(c=>c.classList.toggle('active',c.dataset.prio===fPrio));}}else{{fDereg='High';document.querySelectorAll('.chip[data-dereg]').forEach(c=>c.classList.toggle('active',c.dataset.dereg===fDereg));}}fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
     document.querySelectorAll('.eo-card[data-eo]').forEach(b=>b.onclick=()=>{{_resetSpot();fEO=b.dataset.eo;document.getElementById('f-eo').value=fEO;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-area]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fArea=b.dataset.area;document.getElementById('f-area').value=fArea;applyFilters();jump();}});
     document.querySelectorAll('.lbar[data-agency]').forEach(b=>b.onclick=()=>{{_resetSpot();fLoper=true;document.getElementById('loper-chip').classList.add('active');fAgency=b.dataset.agency;document.getElementById('f-agency').value=fAgency;applyFilters();jump();}});
